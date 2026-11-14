@@ -31,6 +31,9 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
         const drawControl = new LDraw.Control.Draw({
           draw: {
             rectangle: {
+              // leaflet-draw 1.0.4's area tooltip uses an undeclared `type` variable, which throws
+              // in ES modules and breaks dragging. No area tooltip, no crash.
+              showArea: false,
               shapeOptions: {
                 color: '#38bdf8',
                 weight: 2,
