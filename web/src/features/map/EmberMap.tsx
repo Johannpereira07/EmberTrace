@@ -68,6 +68,22 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
   return null;
 }
 
+// Zoom to the selected area, keeping enough surroundings in view to recognise where it is.
+function FitToAoi({ aoi }: { aoi: AoiBbox | null }) {
+  const map = useMap() as LeafletMap;
+  useEffect(() => {
+    if (!aoi) return;
+    map.flyToBounds(
+      [
+        [aoi.min_lat, aoi.min_lon],
+        [aoi.max_lat, aoi.max_lon],
+      ],
+      { padding: [40, 40], maxZoom: 7, duration: 0.8 },
+    );
+  }, [map, aoi]);
+  return null;
+}
+
 export function EmberMap() {
   const { state, dispatch } = useAppState();
 
@@ -108,6 +124,7 @@ export function EmberMap() {
         />
 
         <DrawControls onBboxChange={handleBboxChange} />
+        <FitToAoi aoi={state.aoi} />
 
         {/* User Drawn Selection (Neon Cyan) */}
         {requestedBounds && (

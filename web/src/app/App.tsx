@@ -11,7 +11,9 @@
 import React, { useEffect, useRef } from 'react';
 import { AppProvider, useAppState } from './store';
 import { EmberMap } from '../features/map/EmberMap';
-import { ControlsPanel } from '../features/controls/ControlsPanel';
+import { ControlsPanel, PRESETS } from '../features/controls/ControlsPanel';
+import { HeroStrip, formatMonth } from '../features/overview/HeroStrip';
+import { useCalendarQuery } from './useCalendarQuery';
 import { QualityPanel } from '../features/quality/QualityPanel';
 import { StatusOverlay } from '../features/quality/StatusOverlay';
 import { DownloadButton } from '../features/downloads/DownloadButton';
@@ -20,6 +22,7 @@ import { FireCalendar } from '../features/charts/FireCalendar';
 import { TopAnomalies } from '../features/insights/TopAnomalies';
 import { fetchMeta } from '../api/client';
 import type { ChartExportRef } from '../features/charts/types';
+import type { CalendarResponse } from '../../../contracts/api/types';
 
 // ---- Chart Mode Segmented Controller ----
 
@@ -50,6 +53,13 @@ function ChartModeToggle() {
   );
 }
 
+function coverageLabel(data: CalendarResponse | null): string {
+  if (!data || data.months.length === 0) return '';
+  const first = data.months[0].month;
+  const last = data.months[data.months.length - 1].month;
+  return `${data.months.length} months · ${formatMonth(first)} – ${formatMonth(last)} · ${data.meta.n_cells} cells`;
+}
+
 // ---- Main content area (right side) ----
 
 function MainContent() {
@@ -58,9 +68,14 @@ function MainContent() {
 
   return (
     <main className="flex-1 flex flex-col gap-6 min-w-0 overflow-y-auto pr-1">
-      {/* Map Card */}
-      <div className="h-80 min-h-[300px] rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950 shrink-0 relative">
-        <EmberMap />
+      {/* Pitch + map side by side on wide screens, so the calendar starts higher up */}
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 shrink-0">
+        <div className="xl:col-span-3 flex">
+          <HeroStrip />
+        </div>
+        <div className="xl:col-span-2 h-80 xl:h-auto min-h-[300px] rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950 relative">
+          <EmberMap />
+        </div>
       </div>
 
       {/* Charts & Insights Container */}
@@ -74,7 +89,7 @@ function MainContent() {
               <ChartModeToggle />
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>313 Active Months · Harmonized Nov 2000 – Nov 2026</span>
+                <span>{coverageLabel(state.calendarData)}</span>
               </div>
             </div>
 
@@ -107,13 +122,24 @@ function MainContent() {
 // ---- Sidebar ----
 
 function Sidebar() {
-  const { dispatch } = useAppState();
+  const { state, dispatch } = useAppState();
+  const runQuery = useCalendarQuery();
+  const autoLoaded = useRef(false);
 
   useEffect(() => {
     fetchMeta()
       .then((meta) => dispatch({ type: 'SET_META', meta }))
       .catch(() => { });
   }, [dispatch]);
+
+  // First visit: load the first preset so the calendar is on screen straight away,
+  // instead of an empty panel asking the user to draw something.
+  useEffect(() => {
+    if (!state.meta || state.aoi || autoLoaded.current) return;
+    autoLoaded.current = true;
+    dispatch({ type: 'SET_AOI', aoi: PRESETS[0].aoi });
+    runQuery(PRESETS[0].aoi);
+  }, [state.meta, state.aoi, dispatch, runQuery]);
 
   return (
     <aside
