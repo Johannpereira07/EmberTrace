@@ -9,12 +9,39 @@
  *  - Dynamic coordinate HUD badge
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Rectangle, useMap } from 'react-leaflet';
 import type { LatLngBoundsExpression, Map as LeafletMap } from 'leaflet';
 import { useAppState, AoiBbox } from '../../app/store';
+import { useCalendarQuery } from '../../app/useCalendarQuery';
 
-function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void }) {
+/** Lets the "Draw an area" button (outside the Leaflet map) start and cancel the rectangle tool. */
+interface DrawApi {
+  start: () => void;
+  cancel: () => void;
+}
+
+const RECTANGLE_OPTIONS = {
+  // leaflet-draw 1.0.4's area tooltip uses an undeclared `type` variable, which throws
+  // in ES modules and breaks dragging. No area tooltip, no crash.
+  showArea: false,
+  shapeOptions: {
+    color: '#38bdf8',
+    weight: 2,
+    fillColor: '#0284c7',
+    fillOpacity: 0.25,
+  },
+};
+
+function DrawControls({
+  onBboxChange,
+  api,
+  onDrawingChange,
+}: {
+  onBboxChange: (bbox: AoiBbox) => void;
+  api: React.MutableRefObject<DrawApi | null>;
+  onDrawingChange: (drawing: boolean) => void;
+}) {
   const map = useMap() as LeafletMap;
   const initialised = useRef(false);
 
@@ -30,17 +57,7 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
 
         const drawControl = new LDraw.Control.Draw({
           draw: {
-            rectangle: {
-              // leaflet-draw 1.0.4's area tooltip uses an undeclared `type` variable, which throws
-              // in ES modules and breaks dragging. No area tooltip, no crash.
-              showArea: false,
-              shapeOptions: {
-                color: '#38bdf8',
-                weight: 2,
-                fillColor: '#0284c7',
-                fillOpacity: 0.25,
-              },
-            },
+            rectangle: RECTANGLE_OPTIONS,
             polyline: false,
             polygon: false,
             circle: false,
@@ -50,6 +67,11 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
           edit: false,
         });
         map.addControl(drawControl);
+
+        const rectangle = new LDraw.Draw.Rectangle(map, RECTANGLE_OPTIONS);
+        api.current = { start: () => rectangle.enable(), cancel: () => rectangle.disable() };
+        map.on(LDraw.Draw.Event.DRAWSTART, () => onDrawingChange(true));
+        map.on(LDraw.Draw.Event.DRAWSTOP, () => onDrawingChange(false));
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on(LDraw.Draw.Event.CREATED, (e: any) => {
@@ -63,7 +85,7 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
         });
       });
     });
-  }, [map, onBboxChange]);
+  }, [map, onBboxChange, api, onDrawingChange]);
 
   return null;
 }
@@ -86,10 +108,17 @@ function FitToAoi({ aoi }: { aoi: AoiBbox | null }) {
 
 export function EmberMap() {
   const { state, dispatch } = useAppState();
+  const runQuery = useCalendarQuery();
+  const drawApi = useRef<DrawApi | null>(null);
+  const [drawing, setDrawing] = useState(false);
 
+  // A drawn area loads straight away, like the region presets.
   const handleBboxChange = React.useCallback(
-    (bbox: AoiBbox) => dispatch({ type: 'SET_AOI', aoi: bbox }),
-    [dispatch],
+    (bbox: AoiBbox) => {
+      dispatch({ type: 'SET_AOI', aoi: bbox });
+      runQuery(bbox);
+    },
+    [dispatch, runQuery],
   );
 
   const requestedBounds: LatLngBoundsExpression | null = state.aoi
@@ -123,7 +152,7 @@ export function EmberMap() {
           maxZoom={19}
         />
 
-        <DrawControls onBboxChange={handleBboxChange} />
+        <DrawControls onBboxChange={handleBboxChange} api={drawApi} onDrawingChange={setDrawing} />
         <FitToAoi aoi={state.aoi} />
 
         {/* User Drawn Selection (Neon Cyan) */}
@@ -154,6 +183,31 @@ export function EmberMap() {
         )}
       </MapContainer>
 
+      {/* Draw button: the toolbar's small square is easy to miss */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-2">
+        {drawing && (
+          <div role="status" className="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700 text-xs text-slate-200 shadow-xl">
+            Click and drag on the map. Esc cancels.
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => (drawing ? drawApi.current?.cancel() : drawApi.current?.start())}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-xl transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
+            drawing
+              ? 'bg-slate-800 text-slate-100 border border-slate-600 hover:bg-slate-700'
+              : 'bg-sky-500 text-slate-950 hover:bg-sky-400'
+          }`}
+        >
+          {!drawing && (
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeDasharray="3 2" />
+            </svg>
+          )}
+          {drawing ? 'Cancel drawing' : state.aoi ? 'Draw a new area' : 'Draw an area'}
+        </button>
+      </div>
+
       {/* Coordinate HUD Badge */}
       <div className="absolute top-3 right-3 z-[1000] pointer-events-none flex items-center gap-2">
         <div className="bg-slate-950/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-mono shadow-2xl flex items-center gap-2.5">
@@ -166,7 +220,7 @@ export function EmberMap() {
               {state.aoi.min_lat.toFixed(2)}°N – {state.aoi.max_lat.toFixed(2)}°N · {state.aoi.min_lon.toFixed(2)}°E – {state.aoi.max_lon.toFixed(2)}°E
             </span>
           ) : (
-            <span className="text-slate-500 italic">No area selected (Use draw tool)</span>
+            <span className="text-slate-500 italic">No area selected</span>
           )}
         </div>
       </div>
