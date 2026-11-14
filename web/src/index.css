@@ -367,3 +367,65 @@
   font-size: 0.8rem;
   color: var(--muted);
 }
+
+.story-scope {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+.story-key {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 2.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.story-key li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.story-key-dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  transform: translateY(0.05rem);
+}
+
+.story-key-india {
+  background: #ffd27a;
+  box-shadow: 0 0 8px 2px rgba(255, 148, 66, 0.8);
+}
+
+.story-key-world {
+  width: 0.4rem;
+  height: 0.4rem;
+  background: rgba(217, 140, 89, 0.6);
+}
+
+.story-orbit-labels {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.story-orbit-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: -0.55rem 0 0 0.7rem;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: #c9d2e4;
+  text-shadow: 0 0 6px #070b16, 0 0 2px #070b16;
+  transition: opacity 0.3s;
+  will-change: transform;
+}
+
+.story-orbit-label span {
+  font-weight: 600;
+}

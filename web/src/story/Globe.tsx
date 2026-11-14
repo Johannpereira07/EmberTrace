@@ -52,19 +52,35 @@ const fireVertex = /* glsl */ `
 
 const fireFragment = /* glsl */ `
   uniform float uGlow;
+  uniform float uStrength;
+  uniform vec3 uCool;
+  uniform vec3 uHot;
   varying float vHeat;
   varying float vFacing;
   void main() {
     float d = length(gl_PointCoord - 0.5);
     float a = smoothstep(0.5, 0.0, d);
-    vec3 cool = vec3(0.85, 0.25, 0.05);
-    vec3 hot = vec3(1.0, 0.82, 0.45);
-    vec3 col = mix(cool, hot, vHeat);
-    gl_FragColor = vec4(col, a * vFacing * (0.25 + 0.75 * uGlow));
+    vec3 col = mix(uCool, uHot, vHeat);
+    gl_FragColor = vec4(col, a * vFacing * uStrength * (0.25 + 0.75 * uGlow));
   }
 `;
 
-function FirePoints({ cells, glow }: { cells: StoryData['cells']; glow: React.MutableRefObject<number> }) {
+const INDIA_COLORS = { cool: [0.85, 0.25, 0.05], hot: [1.0, 0.82, 0.45] };
+const WORLD_COLORS = { cool: [0.5, 0.2, 0.1], hot: [0.85, 0.55, 0.35] };
+
+function FirePoints({
+  cells,
+  glow,
+  sizeRange = [2, 11],
+  strength = 1,
+  colors = INDIA_COLORS,
+}: {
+  cells: StoryData['cells'];
+  glow: React.MutableRefObject<number>;
+  sizeRange?: [number, number];
+  strength?: number;
+  colors?: { cool: number[]; hot: number[] };
+}) {
   const gl = useThree((s) => s.gl);
   const { geometry, uniforms } = useMemo(() => {
     const max = Math.max(...cells.map((c) => c[2]));
@@ -74,7 +90,7 @@ function FirePoints({ cells, glow }: { cells: StoryData['cells']; glow: React.Mu
     cells.forEach(([lat, lon, v], i) => {
       latLonToVec(lat, lon, 1.002).toArray(pos, i * 3);
       const h = Math.sqrt(v / max);
-      size[i] = 2 + 9 * h;
+      size[i] = sizeRange[0] + (sizeRange[1] - sizeRange[0]) * h;
       heat[i] = h;
     });
     const g = new THREE.BufferGeometry();
@@ -83,9 +99,15 @@ function FirePoints({ cells, glow }: { cells: StoryData['cells']; glow: React.Mu
     g.setAttribute('aHeat', new THREE.BufferAttribute(heat, 1));
     return {
       geometry: g,
-      uniforms: { uGlow: { value: 0 }, uPixelRatio: { value: gl.getPixelRatio() } },
+      uniforms: {
+        uGlow: { value: 0 },
+        uPixelRatio: { value: gl.getPixelRatio() },
+        uStrength: { value: strength },
+        uCool: { value: new THREE.Color(...(colors.cool as [number, number, number])) },
+        uHot: { value: new THREE.Color(...(colors.hot as [number, number, number])) },
+      },
     };
-  }, [cells, gl]);
+  }, [cells, gl, sizeRange, strength, colors]);
 
   useFrame(() => {
     uniforms.uGlow.value = glow.current;
@@ -174,9 +196,20 @@ interface OrbitSpec {
   radius: number;
   node: number; // rotation of the orbit plane around the polar axis, degrees
   speed: number;
+  phase: number; // starting angle along the orbit, radians, so the satellites (and labels) don't bunch up
 }
 
-function Orbit({ spec, visible }: { spec: OrbitSpec; visible: () => number }) {
+const satWorld = new THREE.Vector3();
+
+function Orbit({
+  spec,
+  visible,
+  label,
+}: {
+  spec: OrbitSpec;
+  visible: () => number;
+  label: React.RefObject<HTMLDivElement>;
+}) {
   const ring = useRef<THREE.LineLoop>(null);
   const sat = useRef<THREE.Mesh>(null);
   const geometry = useMemo(() => {
@@ -194,10 +227,23 @@ function Orbit({ spec, visible }: { spec: OrbitSpec; visible: () => number }) {
     const v = visible();
     if (ring.current) (ring.current.material as THREE.LineBasicMaterial).opacity = 0.55 * v;
     if (sat.current) {
-      const a = state.clock.elapsedTime * spec.speed;
+      const a = spec.phase + state.clock.elapsedTime * spec.speed;
       sat.current.position.set(0, Math.cos(a) * spec.radius, Math.sin(a) * spec.radius);
       (sat.current.material as THREE.MeshBasicMaterial).opacity = v;
       sat.current.visible = v > 0.01;
+
+      // Pin the DOM label next to the satellite; hide it while the satellite is behind the globe.
+      if (label.current) {
+        sat.current.getWorldPosition(satWorld);
+        const behind = satWorld.z < 0 && Math.hypot(satWorld.x, satWorld.y) < 1.05;
+        const ndc = satWorld.clone().project(state.camera);
+        const px = ((ndc.x + 1) / 2) * state.size.width;
+        const py = ((1 - ndc.y) / 2) * state.size.height;
+        // Near the right edge, put the label on the left of the satellite so it isn't cut off.
+        const flip = px > state.size.width - label.current.offsetWidth - 24;
+        label.current.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px)${flip ? ' translateX(calc(-100% - 1.4rem))' : ''}`;
+        label.current.style.opacity = String(behind ? 0 : v);
+      }
     }
   });
 
@@ -214,32 +260,43 @@ function Orbit({ spec, visible }: { spec: OrbitSpec; visible: () => number }) {
   );
 }
 
+// Order matches ORBIT_SATELLITES: config.yaml keys, so names and launch years come from the pipeline config.
 const MODIS_ORBITS: OrbitSpec[] = [
-  { color: '#c084fc', radius: 1.3, node: 20, speed: 0.35 }, // Terra
-  { color: '#60a5fa', radius: 1.37, node: 65, speed: 0.3 }, // Aqua
+  { color: '#c084fc', radius: 1.3, node: 20, speed: 0.35, phase: 0.6 }, // Terra
+  { color: '#60a5fa', radius: 1.37, node: 65, speed: 0.3, phase: 2.0 }, // Aqua
 ];
 const VIIRS_ORBITS: OrbitSpec[] = [
-  { color: '#34d399', radius: 1.45, node: 110, speed: 0.27 }, // S-NPP
-  { color: '#34d399', radius: 1.52, node: 150, speed: 0.25 }, // NOAA-20
-  { color: '#34d399', radius: 1.59, node: 190, speed: 0.23 }, // NOAA-21
+  { color: '#34d399', radius: 1.45, node: 110, speed: 0.27, phase: 3.3 }, // S-NPP
+  { color: '#34d399', radius: 1.52, node: 150, speed: 0.25, phase: 4.4 }, // NOAA-20
+  { color: '#34d399', radius: 1.59, node: 190, speed: 0.23, phase: 5.5 }, // NOAA-21
 ];
+
+const ORBIT_SATELLITES = ['Terra', 'Aqua', 'SNPP', 'NOAA-20', 'NOAA-21'];
+const DISPLAY_NAME: Record<string, string> = { SNPP: 'S-NPP' };
+const SENSOR: Record<string, string> = { Terra: 'MODIS', Aqua: 'MODIS', VIIRS: 'VIIRS' };
 
 // ---- Scene: everything the scroll drives ----
 
 const INDIA = { lat: 22, lon: 79 };
+const WORLD_SIZE: [number, number] = [2, 8];
+const WORLD_START_LON = 15;
 
 function Scene({
   data,
   stage,
   reducedMotion,
+  labels,
 }: {
   data: StoryData;
   stage: React.MutableRefObject<number[]>;
   reducedMotion: boolean;
+  labels: React.RefObject<HTMLDivElement>[];
 }) {
   const tilt = useRef<THREE.Group>(null);
   const spin = useRef<THREE.Group>(null);
   const glow = useRef(0.3);
+  const worldGlow = useRef(0.6);
+  const yaw = useRef(-WORLD_START_LON * DEG); // start over Africa, then turn east toward India
   const eased = useRef([0, 0, 0, 0, 0]);
   const orbitVisibility = useRef([0, 0, 0, 0, 0]);
 
@@ -248,13 +305,22 @@ function Scene({
     stage.current.forEach((v, i) => (eased.current[i] += (v - eased.current[i]) * k));
     const [, jump, more, scale, explore] = eased.current;
 
-    // Before the story reaches India the globe drifts gently either side of it, then settles facing it.
-    const drift = reducedMotion ? 0.2 : 0.2 + 0.15 * Math.sin(state.clock.elapsedTime * 0.12);
-    const facing = smooth(Math.max(scale, explore));
-    if (spin.current) spin.current.rotation.y = -INDIA.lon * DEG + (1 - facing) * drift;
+    // Early in the story the globe turns slowly so the rest of the world shows; from "one scale" on it
+    // eases round the shortest way to face India.
+    const facing = smooth(Math.max(scale, explore) * 1.3);
+    if (reducedMotion) {
+      yaw.current = -INDIA.lon * DEG;
+    } else {
+      yaw.current -= delta * 0.1 * (1 - facing);
+      const target = -INDIA.lon * DEG;
+      const diff = Math.atan2(Math.sin(target - yaw.current), Math.cos(target - yaw.current));
+      yaw.current += diff * Math.min(1, delta * 3 * facing);
+    }
+    if (spin.current) spin.current.rotation.y = yaw.current;
     if (tilt.current) tilt.current.rotation.x = INDIA.lat * DEG * (0.4 + 0.6 * facing);
 
     glow.current = 0.3 + 0.7 * smooth(scale * 1.4);
+    worldGlow.current = 0.75 - 0.45 * smooth(scale * 1.4);
 
     // Desktop: globe sits right of the text column; zooms in and centres on India at the end.
     const wide = state.size.width >= 900;
@@ -280,9 +346,12 @@ function Scene({
     <group ref={tilt}>
       <group ref={spin}>
         <Body />
+        {data.world && (
+          <FirePoints cells={data.world.cells} glow={worldGlow} sizeRange={WORLD_SIZE} strength={0.95} colors={WORLD_COLORS} />
+        )}
         <FirePoints cells={data.cells} glow={glow} />
         {orbits.map((spec, i) => (
-          <Orbit key={i} spec={spec} visible={() => orbitVisibility.current[i]} />
+          <Orbit key={i} spec={spec} visible={() => orbitVisibility.current[i]} label={labels[i]} />
         ))}
       </group>
     </group>
@@ -294,7 +363,10 @@ export default function Globe(props: {
   stage: React.MutableRefObject<number[]>;
   reducedMotion: boolean;
 }) {
+  const labels = useMemo(() => ORBIT_SATELLITES.map(() => React.createRef<HTMLDivElement>()), []);
+  const orbits = [...MODIS_ORBITS, ...VIIRS_ORBITS];
   return (
+    <>
     <Canvas
       dpr={[1, 2]}
       camera={{ position: [0, 0, 4.2], fov: 40 }}
@@ -302,7 +374,20 @@ export default function Globe(props: {
       flat
       aria-hidden="true"
     >
-      <Scene {...props} />
+      <Scene {...props} labels={labels} />
     </Canvas>
+    <div className="story-orbit-labels">
+      {ORBIT_SATELLITES.map((key, i) => {
+        const sat = props.data.satellites[key];
+        if (!sat) return null;
+        return (
+          <div key={key} ref={labels[i]} className="story-orbit-label" style={{ opacity: 0 }}>
+            <span style={{ color: orbits[i].color }}>{DISPLAY_NAME[key] ?? key}</span> ({SENSOR[sat.series] ?? sat.series}),
+            from {sat.start.slice(0, 4)}
+          </div>
+        );
+      })}
+    </div>
+    </>
   );
 }

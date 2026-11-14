@@ -34,6 +34,14 @@ export interface StoryData {
   years: StoryYear[];
   cells_years: [number, number];
   cells: [number, number, number][]; // [lat, lon, mean yearly detections]
+  /** Worldwide context layer: FIRMS global 7-day file, not harmonized. Absent if not downloaded. */
+  world?: {
+    satellites: string[];
+    dates: [string, string];
+    detections: number;
+    cell_size_deg: number;
+    cells: [number, number, number][]; // [lat, lon, detections in the 7 days]
+  };
 }
 
 export function useStoryData() {

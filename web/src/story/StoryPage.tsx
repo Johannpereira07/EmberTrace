@@ -26,6 +26,12 @@ const Globe = lazy(() => import('./Globe'));
 
 const EXPLORER_HREF = '#/explore';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayRange = ([a, b]: [string, string]) => {
+  const [ya, ma, da] = a.split('-').map(Number);
+  const [yb, mb, db] = b.split('-').map(Number);
+  if (ya === yb && ma === mb) return `${da}–${db} ${MONTHS[mb - 1]} ${yb}`;
+  return `${da} ${MONTHS[ma - 1]} ${ya !== yb ? ya + ' ' : ''}– ${db} ${MONTHS[mb - 1]} ${yb}`;
+};
 const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
 
 function mainSource(y: StoryYear): Source {
@@ -152,10 +158,27 @@ function Story({ data }: { data: StoryData }) {
               counts fires differently. EmberTrace puts the whole record on one scale, so an unusual fire season
               stands out from a new instrument.
             </p>
+            <p className="story-hero-line story-scope">
+              Built and tested on India. The method works for any region NASA FIRMS covers, once it has been
+              checked there.
+            </p>
             <div className="story-actions story-hero-line">
               <a href={EXPLORER_HREF} className="story-button">Open the explorer</a>
               <a href="#story-jump" className="story-link">Read how it works</a>
             </div>
+            <ul className="story-key story-hero-line" aria-label="What the globe shows">
+              <li>
+                <span className="story-key-dot story-key-india" aria-hidden="true" />
+                Bright: India, the record EmberTrace has harmonized (yearly average, {data.cells_years[0]}–
+                {data.cells_years[1]}).
+              </li>
+              {data.world && (
+                <li>
+                  <span className="story-key-dot story-key-world" aria-hidden="true" />
+                  Faint: heat detections NASA's VIIRS saw worldwide, {dayRange(data.world.dates)}. Not harmonized.
+                </li>
+              )}
+            </ul>
             {f.synthetic && <p className="story-flag story-hero-line">Demonstration data: these numbers are synthetic.</p>}
           </div>
         </section>

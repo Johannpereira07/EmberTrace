@@ -15,6 +15,10 @@ import pandas as pd
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+# Optional worldwide context layer: FIRMS global 7-day VIIRS file, downloaded by hand into data/raw/global_7d/
+# (https://firms.modaps.eosdis.nasa.gov/data/active_fire/noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_7d.csv).
+WORLD_GLOB = "data/raw/global_7d/*_Global_7d.csv"
+WORLD_CELL_DEG = 0.5
 RAW_COLUMN = {"TERRA_chained": "terra", "AQUA_calibrated": "aqua", "VIIRS": "viirs"}  # columns of `monthly` below
 
 
@@ -79,6 +83,8 @@ def main() -> None:
     per_cell = per_cell[per_cell > 0]
     cells = [[round(lat, 3), round(lon, 3), round(float(v), 1)] for (lat, lon), v in per_cell.items()]
 
+    world = build_world_layer(cells, meta["cell_size_deg"])
+
     out = {
         "generated_from": "data/cell_month.parquet",
         "data_kind": meta["data_kind"],
@@ -95,11 +101,46 @@ def main() -> None:
         "years": years,
         "cells_years": [min(viirs_years), max(viirs_years)],
         "cells": cells,
+        **({"world": world} if world else {}),
     }
     path = ROOT / "web/public/story.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, separators=(",", ":")))
     print(f"wrote {path.relative_to(ROOT)}: {len(years)} years, {len(cells)} cells, {path.stat().st_size / 1024:.0f} KB")
+
+
+def build_world_layer(india_cells: list, india_cell_deg: float) -> dict | None:
+    """Worldwide detections from the FIRMS 7-day file, counted on a coarse grid. India's own cells are
+    left out (the India layer shows them). NRT files have no `type`, so static heat sources are included."""
+    files = sorted(ROOT.glob(WORLD_GLOB))
+    if not files:
+        print(f"note: no file matches {WORLD_GLOB}; story.json has no world layer")
+        return None
+    w = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+    n = len(w)
+    known = {"l", "n", "h", "low", "nominal", "high"}
+    unknown = set(w["confidence"].astype(str).str.lower()) - known
+    if unknown:
+        raise SystemExit(f"unrecognised confidence codes in the world file: {sorted(unknown)}")
+    w = w[~w["confidence"].astype(str).str.lower().isin({"l", "low"})]
+    print(f"world layer: {n} detections, dropped {n - len(w)} low-confidence")
+
+    w["glat"] = (w["latitude"] // WORLD_CELL_DEG) * WORLD_CELL_DEG + WORLD_CELL_DEG / 2
+    w["glon"] = (w["longitude"] // WORLD_CELL_DEG) * WORLD_CELL_DEG + WORLD_CELL_DEG / 2
+    counts = w.groupby(["glat", "glon"]).size()
+    india = {
+        ((lat - india_cell_deg / 2) // WORLD_CELL_DEG * WORLD_CELL_DEG + WORLD_CELL_DEG / 2,
+         (lon - india_cell_deg / 2) // WORLD_CELL_DEG * WORLD_CELL_DEG + WORLD_CELL_DEG / 2)
+        for lat, lon, _ in india_cells
+    }
+    counts = counts[[key not in india for key in counts.index]]
+    return {
+        "satellites": sorted(w["satellite"].astype(str).unique().tolist()),
+        "dates": [str(w["acq_date"].min()), str(w["acq_date"].max())],
+        "detections": int(len(w)),
+        "cell_size_deg": WORLD_CELL_DEG,
+        "cells": [[float(lat), float(lon), int(c)] for (lat, lon), c in counts.items()],
+    }
 
 
 if __name__ == "__main__":
