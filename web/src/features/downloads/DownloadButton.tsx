@@ -35,28 +35,18 @@ export function DownloadButton() {
   }
 
   return (
-    <div>
+    <div className="pt-2 border-t border-slate-850">
       <button
         onClick={handleDownload}
         disabled={downloading}
         aria-label="Download monthly CSV"
-        style={{
-          background: '#0f766e',
-          border: 'none',
-          borderRadius: 8,
-          color: '#fff',
-          padding: '9px 16px',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-          width: '100%',
-          opacity: downloading ? 0.7 : 1,
-        }}
+        className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs tracking-wide bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
       >
-        {downloading ? 'Preparing…' : '⬇ Download Monthly CSV'}
+        <span>{downloading ? '⏳' : '📥'}</span>
+        <span>{downloading ? 'Generating CSV...' : 'Download Monthly CSV'}</span>
       </button>
       {error && (
-        <p role="alert" style={{ color: '#fca5a5', fontSize: 12, marginTop: 6 }}>
+        <p role="alert" className="text-rose-400 text-xs mt-2 text-center font-medium">
           {error}
         </p>
       )}

@@ -92,7 +92,7 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
             const ctx = canvas.getContext('2d');
             if (ctx) {
               ctx.scale(scale, scale);
-              ctx.fillStyle = '#ffffff';
+              ctx.fillStyle = '#090d16';
               ctx.fillRect(0, 0, gridWidth, gridHeight);
               ctx.drawImage(image, 0, 0);
               canvas.toBlob((blob) => {
@@ -138,232 +138,248 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
     }
 
     return (
-      <div className={`overflow-x-auto bg-white p-4 rounded-xl border border-slate-200 shadow-sm ${className}`}>
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${gridWidth} ${gridHeight}`}
-          width="100%"
-          height="100%"
-          style={{
-            maxWidth: `${gridWidth}px`,
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            userSelect: 'none',
-          }}
-          role="img"
-          aria-label="Harmonized Fire Activity Calendar (2000-2026)"
-        >
-          <rect x="0" y="0" width={gridWidth} height={gridHeight} fill="#ffffff" />
+      <div className={`w-full overflow-x-auto bg-slate-900/80 backdrop-blur-xl p-5 rounded-2xl border border-slate-800 shadow-2xl shrink-0 ${className}`}>
+        <div style={{ minWidth: `${gridWidth}px`, width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${gridWidth} ${gridHeight}`}
+            width={gridWidth}
+            height={gridHeight}
+            style={{
+              display: 'block',
+              width: `${gridWidth}px`,
+              height: `${gridHeight}px`,
+              minWidth: `${gridWidth}px`,
+              minHeight: `${gridHeight}px`,
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              userSelect: 'none',
+            }}
+            role="img"
+            aria-label="Harmonized Fire Activity Calendar (2000-2026)"
+          >
+            <rect x="0" y="0" width={gridWidth} height={gridHeight} rx="12" fill="#090d16" stroke="#1e293b" strokeWidth="1" />
 
-          <g transform={`translate(${LEFT_LABEL_WIDTH}, ${TOP_HEADER_HEIGHT - 10})`}>
-            {MONTH_NAMES.map((name, i) => (
+            {/* Header: Month Names & Total */}
+            <g transform={`translate(${LEFT_LABEL_WIDTH}, ${TOP_HEADER_HEIGHT - 10})`}>
+              {MONTH_NAMES.map((name, i) => (
+                <text
+                  key={name}
+                  x={i * (CELL_WIDTH + CELL_GAP) + CELL_WIDTH / 2}
+                  y="0"
+                  textAnchor="middle"
+                  fontSize="11"
+                  fontWeight="600"
+                  fill="#94a3b8"
+                >
+                  {name}
+                </text>
+              ))}
               <text
-                key={name}
-                x={i * (CELL_WIDTH + CELL_GAP) + CELL_WIDTH / 2}
+                x={12 * (CELL_WIDTH + CELL_GAP) + 12}
                 y="0"
-                textAnchor="middle"
+                textAnchor="start"
                 fontSize="11"
                 fontWeight="600"
-                fill="#475569"
+                fill="#94a3b8"
               >
-                {name}
+                Total
               </text>
-            ))}
-            <text
-              x={12 * (CELL_WIDTH + CELL_GAP) + 12}
-              y="0"
-              textAnchor="start"
-              fontSize="11"
-              fontWeight="600"
-              fill="#475569"
-            >
-              Total
-            </text>
-          </g>
+            </g>
 
-          {model.rows.map((row, rIdx) => {
-            const yPos = TOP_HEADER_HEIGHT + rIdx * (CELL_HEIGHT + CELL_GAP);
-            const isSelectedYear = selectedYear === row.year;
-            const isHandover2002 = showSensorMarkers && row.year === 2002;
-            const isHandover2012 = showSensorMarkers && row.year === 2012;
+            {/* Rows: Years 2000 - 2026 */}
+            {model.rows.map((row, rIdx) => {
+              const yPos = TOP_HEADER_HEIGHT + rIdx * (CELL_HEIGHT + CELL_GAP);
+              const isSelectedYear = selectedYear === row.year;
+              const isHandover2002 = showSensorMarkers && row.year === 2002;
+              const isHandover2012 = showSensorMarkers && row.year === 2012;
 
-            return (
-              <g key={row.year} transform={`translate(0, ${yPos})`}>
+              return (
+                <g key={row.year} transform={`translate(0, ${yPos})`}>
+                  <text
+                    x={LEFT_LABEL_WIDTH - 12}
+                    y={CELL_HEIGHT / 2 + 4}
+                    textAnchor="end"
+                    fontSize="12"
+                    fontWeight={isSelectedYear ? '700' : '500'}
+                    fill={isSelectedYear ? '#38bdf8' : '#94a3b8'}
+                  >
+                    {row.year}
+                  </text>
+
+                  {isHandover2002 && (
+                    <line
+                      x1={LEFT_LABEL_WIDTH - 6}
+                      y1="0"
+                      x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
+                      y2="0"
+                      stroke="#a855f7"
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                      opacity="0.9"
+                    />
+                  )}
+                  {isHandover2012 && (
+                    <line
+                      x1={LEFT_LABEL_WIDTH - 6}
+                      y1="0"
+                      x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
+                      y2="0"
+                      stroke="#10b981"
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                      opacity="0.9"
+                    />
+                  )}
+
+                  {row.cells.map((cell, cIdx) => {
+                    const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
+                    const isSelected = isSelectedYear && selectedMonth === cell.month;
+                    const colorInfo = cell.isOutOfRange
+                      ? { fill: '#0f172a', stroke: '#1e293b', isHollow: false }
+                      : getActivityColor(cell.value, effectiveMax);
+
+                    const isDarkFill = !colorInfo.isHollow && cell.value !== null && cell.value > effectiveMax * 0.25;
+                    const textFill = isDarkFill ? '#090d16' : '#f8fafc';
+                    const cellFill = colorInfo.isHollow ? '#090d16' : colorInfo.fill;
+                    const cellStroke = isSelected ? '#38bdf8' : (colorInfo.isHollow ? '#475569' : colorInfo.stroke);
+
+                    return (
+                      <g
+                        key={cell.monthStr}
+                        transform={`translate(${xPos}, 0)`}
+                        style={{ cursor: cell.isOutOfRange ? 'default' : 'pointer' }}
+                        onClick={() => !cell.isOutOfRange && onCellClick?.(cell)}
+                        onMouseEnter={(e) => !cell.isOutOfRange && onCellHover?.(cell, e)}
+                        onMouseLeave={() => onCellHover?.(null)}
+                        tabIndex={cell.isOutOfRange ? -1 : 0}
+                        role="gridcell"
+                        aria-label={cell.ariaLabel}
+                      >
+                        <rect
+                          x="0"
+                          y="0"
+                          width={CELL_WIDTH}
+                          height={CELL_HEIGHT}
+                          rx="2.5"
+                          ry="2.5"
+                          fill={cellFill}
+                          stroke={cellStroke}
+                          strokeWidth={isSelected ? '2' : '1'}
+                        />
+
+                        {cell.source === 'TERRA_chained' && !cell.isOutOfRange && (
+                          <circle cx={CELL_WIDTH - 4} cy="4" r="2" fill="#a855f7">
+                            <title>Terra Chained</title>
+                          </circle>
+                        )}
+
+                        {cell.isProvisional && !cell.isOutOfRange && (
+                          <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b">
+                            <title>Provisional NRT</title>
+                          </rect>
+                        )}
+
+                        {!cell.isOutOfRange && cell.value !== null && (
+                          <text
+                            x={CELL_WIDTH / 2}
+                            y={CELL_HEIGHT / 2 + 3.5}
+                            textAnchor="middle"
+                            fontSize="9.5"
+                            fontWeight={colorInfo.isHollow ? '400' : '600'}
+                            fill={colorInfo.isHollow ? '#64748b' : textFill}
+                          >
+                            {cell.value === 0 ? '0' : formatCount(cell.value)}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+
+                  <text
+                    x={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 12}
+                    y={CELL_HEIGHT / 2 + 4}
+                    textAnchor="start"
+                    fontSize="11"
+                    fontWeight="600"
+                    fill="#94a3b8"
+                  >
+                    {row.annualTotal !== null ? formatCount(row.annualTotal) : '—'}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Historical Monthly Median Summary Row */}
+            {showMedianRow && (
+              <g
+                transform={`translate(0, ${
+                  TOP_HEADER_HEIGHT + numRows * (CELL_HEIGHT + CELL_GAP) + MEDIAN_ROW_GAP
+                })`}
+              >
+                <line
+                  x1={LEFT_LABEL_WIDTH - 10}
+                  y1="-6"
+                  x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 50}
+                  y2="-6"
+                  stroke="#1e293b"
+                  strokeWidth="1"
+                />
+
                 <text
                   x={LEFT_LABEL_WIDTH - 12}
                   y={CELL_HEIGHT / 2 + 4}
                   textAnchor="end"
-                  fontSize="12"
-                  fontWeight={isSelectedYear ? '700' : '500'}
-                  fill={isSelectedYear ? '#1e293b' : '#64748b'}
+                  fontSize="11"
+                  fontWeight="700"
+                  fill="#94a3b8"
                 >
-                  {row.year}
+                  Median
                 </text>
 
-                {isHandover2002 && (
-                  <line
-                    x1={LEFT_LABEL_WIDTH - 6}
-                    y1="0"
-                    x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
-                    y2="0"
-                    stroke="#9333ea"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                    opacity="0.8"
-                  />
-                )}
-                {isHandover2012 && (
-                  <line
-                    x1={LEFT_LABEL_WIDTH - 6}
-                    y1="0"
-                    x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
-                    y2="0"
-                    stroke="#059669"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                    opacity="0.8"
-                  />
-                )}
-
-                {row.cells.map((cell, cIdx) => {
-                  const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
-                  const isSelected = isSelectedYear && selectedMonth === cell.month;
-                  const colorInfo = cell.isOutOfRange
-                    ? { fill: SPECIAL_CELL_COLORS.outOfRangeFill, stroke: SPECIAL_CELL_COLORS.outOfRangeStroke, isHollow: false }
-                    : getActivityColor(cell.value, effectiveMax);
-
-                  const isDarkFill = !colorInfo.isHollow && cell.value !== null && cell.value > effectiveMax * 0.25;
-                  const textFill = isDarkFill ? '#ffffff' : '#1e293b';
+                {Array.from({ length: 12 }, (_, i) => i).map((i) => {
+                  const med = model.monthlyMedians[i] ?? null;
+                  const xPos = LEFT_LABEL_WIDTH + i * (CELL_WIDTH + CELL_GAP);
+                  const colorInfo = getActivityColor(med, effectiveMax);
+                  const isDark = !colorInfo.isHollow && med !== null && med > effectiveMax * 0.25;
 
                   return (
-                    <g
-                      key={cell.monthStr}
-                      transform={`translate(${xPos}, 0)`}
-                      style={{ cursor: cell.isOutOfRange ? 'default' : 'pointer' }}
-                      onClick={() => !cell.isOutOfRange && onCellClick?.(cell)}
-                      onMouseEnter={(e) => !cell.isOutOfRange && onCellHover?.(cell, e)}
-                      onMouseLeave={() => onCellHover?.(null)}
-                      tabIndex={cell.isOutOfRange ? -1 : 0}
-                      role="gridcell"
-                      aria-label={cell.ariaLabel}
-                    >
+                    <g key={`median-${i}`} transform={`translate(${xPos}, 0)`}>
                       <rect
                         x="0"
                         y="0"
                         width={CELL_WIDTH}
                         height={CELL_HEIGHT}
                         rx="2.5"
-                        ry="2.5"
-                        fill={colorInfo.fill}
-                        stroke={isSelected ? '#0284c7' : colorInfo.stroke}
-                        strokeWidth={isSelected ? '2' : '1'}
+                        fill={colorInfo.isHollow ? '#090d16' : colorInfo.fill}
+                        stroke={colorInfo.isHollow ? '#475569' : colorInfo.stroke}
+                        strokeWidth="1"
                       />
-
-                      {cell.source === 'TERRA_chained' && !cell.isOutOfRange && (
-                        <circle cx={CELL_WIDTH - 4} cy="4" r="2" fill="#a855f7"><title>Terra Chained</title></circle>
-                      )}
-
-                      {cell.isProvisional && !cell.isOutOfRange && (
-                        <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b"><title>Provisional NRT</title></rect>
-                      )}
-
-                      {!cell.isOutOfRange && cell.value !== null && (
-                        <text
-                          x={CELL_WIDTH / 2}
-                          y={CELL_HEIGHT / 2 + 3.5}
-                          textAnchor="middle"
-                          fontSize="9.5"
-                          fontWeight={colorInfo.isHollow ? '400' : '600'}
-                          fill={colorInfo.isHollow ? '#64748b' : textFill}
-                        >
-                          {cell.value === 0 ? '0' : formatCount(cell.value)}
-                        </text>
-                      )}
+                      <text
+                        x={CELL_WIDTH / 2}
+                        y={CELL_HEIGHT / 2 + 3.5}
+                        textAnchor="middle"
+                        fontSize="9.5"
+                        fontWeight="600"
+                        fill={isDark ? '#090d16' : '#f8fafc'}
+                      >
+                        {formatCount(med)}
+                      </text>
                     </g>
                   );
                 })}
-
-                <text
-                  x={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 12}
-                  y={CELL_HEIGHT / 2 + 4}
-                  textAnchor="start"
-                  fontSize="11"
-                  fontWeight="600"
-                  fill="#334155"
-                >
-                  {row.annualTotal !== null ? formatCount(row.annualTotal) : '—'}
-                </text>
               </g>
-            );
-          })}
+            )}
 
-          {showMedianRow && (
-            <g
-              transform={`translate(0, ${
-                TOP_HEADER_HEIGHT + numRows * (CELL_HEIGHT + CELL_GAP) + MEDIAN_ROW_GAP
-              })`}
-            >
-              <line
-                x1={LEFT_LABEL_WIDTH - 10}
-                y1="-6"
-                x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 50}
-                y2="-6"
-                stroke="#cbd5e1"
-                strokeWidth="1"
-              />
-
-              <text
-                x={LEFT_LABEL_WIDTH - 12}
-                y={CELL_HEIGHT / 2 + 4}
-                textAnchor="end"
-                fontSize="11"
-                fontWeight="700"
-                fill="#475569"
-              >
-                Median
+            {/* Watermark / Synthetic Disclaimer */}
+            <g transform={`translate(${LEFT_LABEL_WIDTH}, ${gridHeight - 16})`}>
+              <text x="0" y="0" fontSize="10" fill="#64748b">
+                {model.meta?.data_kind === 'synthetic'
+                  ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
+                  : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
               </text>
-
-              {Array.from({ length: 12 }, (_, i) => i).map((i) => {
-                const med = model.monthlyMedians[i] ?? null;
-                const xPos = LEFT_LABEL_WIDTH + i * (CELL_WIDTH + CELL_GAP);
-                const colorInfo = getActivityColor(med, effectiveMax);
-                const isDark = !colorInfo.isHollow && med !== null && med > effectiveMax * 0.25;
-
-                return (
-                  <g key={`median-${i}`} transform={`translate(${xPos}, 0)`}>
-                    <rect
-                      x="0"
-                      y="0"
-                      width={CELL_WIDTH}
-                      height={CELL_HEIGHT}
-                      rx="2.5"
-                      fill={colorInfo.fill}
-                      stroke="#94a3b8"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={CELL_WIDTH / 2}
-                      y={CELL_HEIGHT / 2 + 3.5}
-                      textAnchor="middle"
-                      fontSize="9.5"
-                      fontWeight="600"
-                      fill={isDark ? '#ffffff' : '#1e293b'}
-                    >
-                      {formatCount(med)}
-                    </text>
-                  </g>
-                );
-              })}
             </g>
-          )}
-
-          <g transform={`translate(${LEFT_LABEL_WIDTH}, ${gridHeight - 16})`}>
-            <text x="0" y="0" fontSize="10" fill="#94a3b8">
-              {model.meta?.data_kind === 'synthetic'
-                ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
-                : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
-            </text>
-          </g>
-        </svg>
+          </svg>
+        </div>
       </div>
     );
   }

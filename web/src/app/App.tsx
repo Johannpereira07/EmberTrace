@@ -2,15 +2,10 @@
  * EmberTrace – Root App component (APP-1)
  * Person 4: App & Map Lead
  *
- * Layout:
- *  ┌──────────────────────────────────┐
- *  │  Header                          │
- *  ├──────────┬──────────────────────-┤
- *  │ Sidebar  │  Map (top)            │
- *  │ Controls │  Charts (bottom)      │
- *  │ Quality  │                       │
- *  │ Download │                       │
- *  └──────────┴───────────────────────┘
+ * Modern NASA Earth Science Mission Dashboard:
+ *  - High-density responsive split layout
+ *  - Interactive OpenStreetMap Dark Canvas satellite canvas
+ *  - Harmonized MODIS & VIIRS Heatmap Calendar (Nov 2000 – Nov 2026)
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -26,31 +21,31 @@ import { TopAnomalies } from '../features/insights/TopAnomalies';
 import { fetchMeta } from '../api/client';
 import type { ChartExportRef } from '../features/charts/types';
 
-// ---- Chart mode toggle ----
+// ---- Chart Mode Segmented Controller ----
 
 function ChartModeToggle() {
   const { state, dispatch } = useAppState();
   return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-      {(['activity', 'anomaly'] as const).map((mode) => (
-        <button
-          key={mode}
-          onClick={() => dispatch({ type: 'SET_CHART_MODE', mode })}
-          aria-pressed={state.chartMode === mode}
-          style={{
-            background: state.chartMode === mode ? '#dc2626' : '#1e293b',
-            border: '1px solid #334155',
-            borderRadius: 6,
-            color: '#e2e8f0',
-            padding: '6px 14px',
-            fontSize: 13,
-            cursor: 'pointer',
-            fontWeight: state.chartMode === mode ? 700 : 400,
-          }}
-        >
-          {mode === 'activity' ? '🔥 Activity' : '📈 Anomaly'}
-        </button>
-      ))}
+    <div className="inline-flex items-center gap-1 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-inner">
+      {(['activity', 'anomaly'] as const).map((mode) => {
+        const isActive = state.chartMode === mode;
+        return (
+          <button
+            key={mode}
+            onClick={() => dispatch({ type: 'SET_CHART_MODE', mode })}
+            aria-pressed={isActive}
+            className={`px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all duration-200 flex items-center gap-2 cursor-pointer ${isActive
+              ? mode === 'activity'
+                ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg shadow-red-950/60'
+                : 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white shadow-lg shadow-indigo-950/60'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+          >
+            <span className="text-sm">{mode === 'activity' ? '🔥' : '📈'}</span>
+            <span>{mode === 'activity' ? 'Raw Fire Activity' : 'Baseline Anomalies'}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -62,21 +57,32 @@ function MainContent() {
   const chartRef = useRef<ChartExportRef>(null);
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-      {/* Map */}
-      <div style={{ height: 340, borderRadius: 10, overflow: 'hidden', border: '1px solid #1e293b' }}>
+    <main className="flex-1 flex flex-col gap-6 min-w-0 overflow-y-auto pr-1">
+      {/* Map Card */}
+      <div className="h-80 min-h-[300px] rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950 shrink-0 relative">
         <EmberMap />
       </div>
 
-      {/* Charts area */}
-      <div style={{ flex: 1, background: '#0f172a', borderRadius: 10, border: '1px solid #1e293b', padding: 16, minHeight: 300 }}>
+      {/* Charts & Insights Container */}
+      <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 backdrop-blur-xl p-5 md:p-6 flex flex-col gap-6 shadow-2xl shrink-0">
         {state.status !== 'success' ? (
           <StatusOverlay />
         ) : (
           <>
-            <ChartModeToggle />
+            {/* Header controls strip */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-800/80 shrink-0">
+              <ChartModeToggle />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>313 Active Months · Harmonized Nov 2000 – Nov 2026</span>
+              </div>
+            </div>
+
+            {/* Quality and warnings ribbon */}
             <QualityPanel />
-            <div style={{ marginTop: 12 }}>
+
+            {/* Heatmap Section */}
+            <div className="w-full shrink-0">
               <FireCalendar
                 ref={chartRef}
                 response={state.calendarData}
@@ -86,13 +92,15 @@ function MainContent() {
                 onNoticeRequest={(topic) => dispatch({ type: 'SET_NOTICE', notice: topic })}
               />
             </div>
-            <div style={{ marginTop: 20 }}>
+
+            {/* Top Historical Anomalies */}
+            <div className="shrink-0">
               <TopAnomalies response={state.calendarData} />
             </div>
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -104,23 +112,12 @@ function Sidebar() {
   useEffect(() => {
     fetchMeta()
       .then((meta) => dispatch({ type: 'SET_META', meta }))
-      .catch(() => {/* meta is optional — controls fall back to defaults */});
+      .catch(() => { });
   }, [dispatch]);
 
   return (
     <aside
-      style={{
-        width: 280,
-        flexShrink: 0,
-        background: '#0f172a',
-        border: '1px solid #1e293b',
-        borderRadius: 10,
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 20,
-        overflowY: 'auto',
-      }}
+      className="w-full lg:w-84 shrink-0 bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-5 flex flex-col gap-5 shadow-2xl overflow-y-auto"
       aria-label="Controls sidebar"
     >
       <ControlsPanel />
@@ -134,29 +131,41 @@ function Sidebar() {
 
 function AppShell() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#020617', color: '#e2e8f0' }}>
+    <div className="flex flex-col min-h-screen lg:h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
       {/* Header */}
-      <header
-        style={{
-          padding: '10px 20px',
-          borderBottom: '1px solid #1e293b',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: 22 }}>🔥</span>
-        <div>
-          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em' }}>EmberTrace</span>
-          <span style={{ marginLeft: 10, fontSize: 12, color: '#475569' }}>
-            NASA Space Apps 2026 · Challenge 15 · MODIS + VIIRS Harmonization
-          </span>
+      <header className="px-6 py-3.5 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md flex items-center justify-between shrink-0 z-10 shadow-lg">
+        <div className="flex items-center gap-3.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-red-600 via-rose-600 to-amber-500 flex items-center justify-center text-lg shadow-lg shadow-red-950/60">
+            🔥
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span className="font-extrabold text-lg tracking-tight text-white">
+                EmberTrace
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-red-500/10 text-red-400 border border-red-500/20">
+                NASA Space Apps 2026
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">
+              Challenge 15: Cross-Sensor Harmonization of MODIS & VIIRS Hot Spots
+            </p>
+          </div>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800">
+            <span className="inline-block w-2 h-2 rounded-full bg-purple-400" /> Terra
+            <span className="text-slate-600">→</span>
+            <span className="inline-block w-2 h-2 rounded-full bg-blue-400" /> Aqua
+            <span className="text-slate-600">→</span>
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" /> VIIRS
+          </div>
         </div>
       </header>
 
-      {/* Body */}
-      <div style={{ flex: 1, display: 'flex', gap: 16, padding: 16, overflow: 'hidden' }}>
+      {/* Main Responsive Grid/Flex Body */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-5 p-4 md:p-5 overflow-auto lg:overflow-hidden min-h-0">
         <Sidebar />
         <MainContent />
       </div>

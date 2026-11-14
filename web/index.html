@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EmberTrace — Fire Activity Harmonization</title>
+    <title>EmberTrace — NASA Space Apps Challenge 15 (MODIS & VIIRS Harmonization)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -14,13 +17,8 @@
       href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
       crossorigin=""
     />
-    <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; }
-      #root { height: 100%; }
-    </style>
   </head>
-  <body>
+  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-rose-500 selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/app/main.tsx"></script>
   </body>

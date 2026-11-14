@@ -39,7 +39,7 @@ export const FireCalendar = forwardRef<ChartExportRef, FireCalendarProps>(
     }));
 
     return (
-      <div className={`space-y-3 ${className}`}>
+      <div className={`space-y-4 shrink-0 w-full ${className}`}>
         {/* Accessible Legend */}
         <ChartLegend
           type={mode}

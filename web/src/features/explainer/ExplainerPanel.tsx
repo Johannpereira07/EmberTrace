@@ -1,9 +1,6 @@
 /**
  * EmberTrace – Harmonization explainer panel (APP-8)
  * Person 4: App & Map Lead
- *
- * Text will be provided by Person 2 in docs/explainer.md.
- * This component renders a collapsible panel with placeholder text until then.
  */
 
 import React, { useState } from 'react';
@@ -23,38 +20,23 @@ export function ExplainerPanel() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{ borderTop: '1px solid #1e293b', paddingTop: 12 }}>
+    <div className="pt-2 border-t border-slate-850">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="explainer-body"
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: '#64748b',
-          fontSize: 12,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: 0,
-          width: '100%',
-          textAlign: 'left',
-        }}
+        className="text-xs text-slate-400 hover:text-slate-200 transition flex items-center gap-2 cursor-pointer w-full text-left font-medium py-1"
       >
-        <span style={{ transform: open ? 'rotate(90deg)' : 'none', display: 'inline-block', transition: 'transform 0.15s' }}>▶</span>
-        How are sensors harmonized?
+        <span className={`transform transition-transform text-[10px] ${open ? 'rotate-90' : ''}`}>
+          ▶
+        </span>
+        <span>How are sensors harmonized?</span>
       </button>
       {open && (
         <div
           id="explainer-body"
-          style={{
-            marginTop: 10,
-            color: '#94a3b8',
-            fontSize: 12,
-            lineHeight: 1.65,
-            whiteSpace: 'pre-wrap',
-          }}
+          className="mt-2.5 p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 leading-relaxed font-sans"
         >
           {PLACEHOLDER_TEXT}
         </div>

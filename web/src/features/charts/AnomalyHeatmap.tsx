@@ -81,7 +81,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
             const ctx = canvas.getContext('2d');
             if (ctx) {
               ctx.scale(scale, scale);
-              ctx.fillStyle = '#ffffff';
+              ctx.fillStyle = '#090d16';
               ctx.fillRect(0, 0, gridWidth, gridHeight);
               ctx.drawImage(image, 0, 0);
               canvas.toBlob((blob) => {
@@ -127,21 +127,26 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
     }
 
     return (
-      <div className={`overflow-x-auto bg-white p-4 rounded-xl border border-slate-200 shadow-sm ${className}`}>
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${gridWidth} ${gridHeight}`}
-          width="100%"
-          height="100%"
-          style={{
-            maxWidth: `${gridWidth}px`,
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            userSelect: 'none',
-          }}
-          role="img"
-          aria-label="Harmonized Fire Anomaly Heatmap (2000-2026)"
-        >
-          <rect x="0" y="0" width={gridWidth} height={gridHeight} fill="#ffffff" />
+      <div className={`w-full overflow-x-auto bg-slate-900/80 backdrop-blur-xl p-5 rounded-2xl border border-slate-800 shadow-2xl shrink-0 ${className}`}>
+        <div style={{ minWidth: `${gridWidth}px`, width: '100%', display: 'flex', justifyContent: 'center' }}>
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${gridWidth} ${gridHeight}`}
+            width={gridWidth}
+            height={gridHeight}
+            style={{
+              display: 'block',
+              width: `${gridWidth}px`,
+              height: `${gridHeight}px`,
+              minWidth: `${gridWidth}px`,
+              minHeight: `${gridHeight}px`,
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              userSelect: 'none',
+            }}
+            role="img"
+            aria-label="Harmonized Fire Anomaly Heatmap (2000-2026)"
+          >
+          <rect x="0" y="0" width={gridWidth} height={gridHeight} rx="12" fill="#090d16" stroke="#1e293b" strokeWidth="1" />
 
           <g transform={`translate(${LEFT_LABEL_WIDTH}, ${TOP_HEADER_HEIGHT - 10})`}>
             {MONTH_NAMES.map((name, i) => (
@@ -152,7 +157,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                 textAnchor="middle"
                 fontSize="11"
                 fontWeight="600"
-                fill="#475569"
+                fill="#94a3b8"
               >
                 {name}
               </text>
@@ -173,7 +178,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                   textAnchor="end"
                   fontSize="12"
                   fontWeight={isSelectedYear ? '700' : '500'}
-                  fill={isSelectedYear ? '#1e293b' : '#64748b'}
+                  fill={isSelectedYear ? '#38bdf8' : '#94a3b8'}
                 >
                   {row.year}
                 </text>
@@ -184,10 +189,10 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                     y1="0"
                     x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
                     y2="0"
-                    stroke="#9333ea"
+                    stroke="#a855f7"
                     strokeWidth="1.5"
                     strokeDasharray="3 3"
-                    opacity="0.8"
+                    opacity="0.9"
                   />
                 )}
                 {isHandover2012 && (
@@ -196,10 +201,10 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                     y1="0"
                     x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
                     y2="0"
-                    stroke="#059669"
+                    stroke="#10b981"
                     strokeWidth="1.5"
                     strokeDasharray="3 3"
-                    opacity="0.8"
+                    opacity="0.9"
                   />
                 )}
 
@@ -207,7 +212,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                   const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
                   const isSelected = isSelectedYear && selectedMonth === cell.month;
                   const colorInfo = cell.isOutOfRange
-                    ? { fill: SPECIAL_CELL_COLORS.outOfRangeFill, stroke: SPECIAL_CELL_COLORS.outOfRangeStroke, textColor: '#94a3b8' }
+                    ? { fill: '#0f172a', stroke: '#1e293b', textColor: '#64748b' }
                     : getAnomalyColor(cell.anomaly, cell.anomalyState);
 
                   return (
@@ -230,7 +235,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                         rx="2.5"
                         ry="2.5"
                         fill={colorInfo.fill}
-                        stroke={isSelected ? '#0284c7' : colorInfo.stroke}
+                        stroke={isSelected ? '#38bdf8' : colorInfo.stroke}
                         strokeWidth={isSelected ? '2' : '1'}
                       />
 
@@ -254,13 +259,14 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
           })}
 
           <g transform={`translate(${LEFT_LABEL_WIDTH}, ${gridHeight - 16})`}>
-            <text x="0" y="0" fontSize="10" fill="#94a3b8">
+            <text x="0" y="0" fontSize="10" fill="#64748b">
               {model.meta?.data_kind === 'synthetic'
                 ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
                 : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
             </text>
           </g>
         </svg>
+        </div>
       </div>
     );
   }

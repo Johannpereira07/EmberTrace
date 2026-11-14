@@ -22,13 +22,13 @@ export const ChartLegend: React.FC<LegendProps> = ({
 }) => {
   return (
     <div
-      className={`p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 shadow-sm ${className}`}
+      className={`p-4 bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-2xl text-xs text-slate-300 shadow-2xl shrink-0 w-full ${className}`}
       style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         {type === 'activity' ? (
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-800">Fire Detections:</span>
+            <span className="font-semibold text-white">Fire Detections:</span>
             
             <div className="flex items-center gap-1.5">
               <span
@@ -36,65 +36,66 @@ export const ChartLegend: React.FC<LegendProps> = ({
                   display: 'inline-block',
                   width: '14px',
                   height: '14px',
-                  backgroundColor: SPECIAL_CELL_COLORS.zeroHollowFill,
-                  border: `1.5px solid ${SPECIAL_CELL_COLORS.zeroOutlineStroke}`,
+                  backgroundColor: '#090d16',
+                  border: '1.5px solid #64748b',
                   borderRadius: '2px',
                 }}
               />
-              <span className="text-slate-600">0 (Hollow)</span>
+              <span className="text-slate-400">0 (Hollow)</span>
             </div>
 
             <div className="flex items-center gap-1.5 ml-2">
-              <span className="text-slate-500">1</span>
+              <span className="text-slate-400">1</span>
               <div
                 style={{
                   width: '120px',
                   height: '12px',
                   borderRadius: '2px',
                   background: `linear-gradient(to right, ${VIRIDIS_STOPS.join(', ')})`,
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid #334155',
                 }}
                 title="Square-root scaled Viridis ramp"
               />
-              <span className="text-slate-700 font-medium">{Math.round(maxCount).toLocaleString()}+</span>
+              <span className="text-slate-200 font-semibold">{Math.round(maxCount).toLocaleString()}+</span>
             </div>
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-800">Anomaly vs Median:</span>
+            <span className="font-semibold text-white">Anomaly vs Median:</span>
             
             <div className="flex items-center gap-1.5">
-              <span className="text-blue-800 font-medium">0.2x (Low)</span>
+              <span className="text-sky-400 font-medium">0.2x (Low)</span>
               <div className="flex gap-0.5">
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.extremeLow }} title="< 0.2x" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.low }} title="0.2x - 0.5x" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.moderateLow }} title="0.5x - 0.8x" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.nearNormalLow }} title="0.8x - 1.0x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.normal, border: '1px solid #cbd5e1' }} title="1.0x (Normal)" />
+                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.normal, border: '1px solid #475569' }} title="1.0x (Normal)" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.nearNormalHigh }} title="1.0x - 1.25x" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.moderateHigh }} title="1.25x - 2.0x" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.high }} title="2.0x - 4.0x" />
                 <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.extremeHigh }} title="> 4.0x" />
               </div>
-              <span className="text-orange-800 font-medium">4.0x+ (High)</span>
+              <span className="text-orange-400 font-medium">4.0x+ (High)</span>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-4 text-slate-600">
+        <div className="flex items-center gap-4 text-slate-400">
           <div className="flex items-center gap-1.5">
             <span
               style={{
                 width: '10px',
                 height: '10px',
                 borderRadius: '50%',
-                backgroundColor: '#9333ea',
+                backgroundColor: '#a855f7',
                 display: 'inline-block',
+                boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)',
               }}
             />
             <button
               type="button"
-              className="hover:underline text-slate-700 cursor-pointer"
+              className="hover:underline text-slate-300 hover:text-purple-300 cursor-pointer"
               onClick={() => onNoticeClick?.('terra_chain')}
             >
               2000–02: Terra Chained ℹ️
@@ -107,11 +108,12 @@ export const ChartLegend: React.FC<LegendProps> = ({
                 width: '10px',
                 height: '10px',
                 borderRadius: '50%',
-                backgroundColor: '#2563eb',
+                backgroundColor: '#3b82f6',
                 display: 'inline-block',
+                boxShadow: '0 0 8px rgba(59, 130, 246, 0.4)',
               }}
             />
-            <span>2002–11: Aqua Calibrated</span>
+            <span className="text-slate-300">2002–11: Aqua Calibrated</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -120,15 +122,16 @@ export const ChartLegend: React.FC<LegendProps> = ({
                 width: '10px',
                 height: '10px',
                 borderRadius: '50%',
-                backgroundColor: '#059669',
+                backgroundColor: '#10b981',
                 display: 'inline-block',
+                boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)',
               }}
             />
-            <span>2012–Now: VIIRS</span>
+            <span className="text-slate-300">2012–Now: VIIRS</span>
           </div>
 
           <div className="flex items-center gap-1">
-            <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-medium">
+            <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium">
               [P] Provisional NRT
             </span>
           </div>
