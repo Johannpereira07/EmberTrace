@@ -38,6 +38,8 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 
 ```
 pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
+make pipeline        # full India run into out/: about 2 min, peak about 4.6 GB RAM (docs/09)
+make pipeline-test
 python scripts/profile_raw.py
 python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
 python -m pytest pipeline/tests
@@ -45,7 +47,7 @@ python -m pytest pipeline/tests
 
 Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.
 
-Make targets: `make pipeline | api | web | web-live | test | contract-test | fixtures` (planned); `make docker-run | deploy | demo-on | demo-off | url | logs` (exist).
+Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | pipeline-test | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
 
 ## Method (do not change without asking)
 
@@ -108,7 +110,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - No `meta.json` yet (Person 2, CAL-1/CAL-4). Its `data_through`, `provisional_from` and cell size come from `normalized.meta.json` (ING-8); windows and baseline years still missing.
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.
-- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. Central India sample: a cell with 0 detections becomes 4.4 (`AQUA_calibrated`) or 14.2 (`TERRA_chained`). Result: no `zero` months before 2012, quiet cells add a step at 2002-07 (14.2 to 4.4) and 2012-01 (4.4 to 0), and Jun 2001 shows 241.6 from 1 detection. Needs a fix that keeps 0 at 0; verify on the India-wide fit.
+- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. **Confirmed on the full India run (docs/09):** a cell with 0 detections becomes 3.22 (`AQUA_calibrated`) or 18.26 (`TERRA_chained`), a floor of ~15,000 / ~84,900 per month over 4,651 cells. The Jun to Jul 2002 change is ×0.18 (normal ×0.81 to 0.98), a large artificial step, and 46% of the pre-2012 total comes from cells with 0 detections. Fails the PRD success test. Needs a fix that keeps 0 at 0.
 
 ## Git conventions
 
