@@ -23,7 +23,8 @@ Usage (from the repo root):
 Outputs (in --out):
   unified.csv           every detection in one schema
   normalized.csv        stage-4 table, the ingest -> model handoff (contracts/normalized.schema.md)
-  normalized.meta.json  data_through, provisional_from, cell size (same handoff)
+  normalized.meta.json  data_through, provisional_from, cell size, outage-day counts (same handoff)
+  outages.csv           outage days per satellite (rule in docs/08), removed from the observed days
   cell_month.csv        per cell x month: counts per series, harmonized value, source
   calibration.json      both fits + hold-out check
   calendar.csv          year x month harmonized counts for the whole AOI
@@ -36,8 +37,10 @@ import pandas as pd
 if __package__ in (None, ""):   # allow `python pipeline/run.py` as well as `python -m pipeline.run`
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pipeline.ingest import aggregate, coverage_info, load_many, restrict_to_loaded_data
-from pipeline.ingest.satellites import CELL_SIZE_DEG
+from pipeline.ingest import (aggregate, coverage_info, daily_counts, find_outages, load_many,
+                             outage_days_by_month, read_firms_table, restrict_to_loaded_data)
+from pipeline.ingest.satellites import (CELL_SIZE_DEG, OUTAGE_MIN_NEIGHBOUR_MEDIAN, OUTAGE_TABLE,
+                                        OUTAGE_WINDOW_DAYS)
 from pipeline.model import calendar, fit_log_line, harmonize, holdout_check
 
 
@@ -51,6 +54,8 @@ def main():
                     help="months used to fit Aqua->VIIRS (avoid drifted years)")
     ap.add_argument("--t2a-window", nargs=2, default=["2002-08", "2011-12"],
                     help="months used to fit Terra->Aqua")
+    ap.add_argument("--outages", help="use this outages.csv instead of deriving outage days from the loaded "
+                                      "data (needed when the input is a small spatial subset)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
 
@@ -61,7 +66,17 @@ def main():
     print(f"data_through {info['data_through']}, provisional_from {info['provisional_from']}")
     restrict_to_loaded_data(u)
     u.to_csv(f"{a.out}/unified.csv", index=False)
-    cm = aggregate(u, a.res)
+    if a.outages:
+        outages = pd.read_csv(a.outages, parse_dates=["date"])
+        print(f"outage days: {len(outages)} read from {a.outages}")
+    else:
+        outages = find_outages(daily_counts(u), read_firms_table(OUTAGE_TABLE),
+                               OUTAGE_MIN_NEIGHBOUR_MEDIAN, OUTAGE_WINDOW_DAYS)
+        print(f"outage days: {len(outages)} derived from the loaded data "
+              f"({(outages['reason'] == 'unlisted_zero').sum()} not in the FIRMS table)")
+    outages.to_csv(f"{a.out}/outages.csv", index=False)
+    info["outage_days"] = {p: int(n) for p, n in outages["platform"].value_counts().sort_index().items()}
+    cm = aggregate(u, a.res, outage_days_by_month(outages))
     cm.to_csv(f"{a.out}/normalized.csv", index=False)   # handoff H1
     json.dump(info, open(f"{a.out}/normalized.meta.json", "w"), indent=2)
 

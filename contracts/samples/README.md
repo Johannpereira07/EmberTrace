@@ -6,9 +6,10 @@
 | `cell_month.central-india.csv` | Per cell and month: counts per series, harmonized value, source | H2, **stand-in** (see below) |
 | `meta.central-india.json` | Dataset facts for `GET /api/meta` | H2, **stand-in**, fields from API spec §4 |
 | `normalized.meta.central-india.json` | H1 sidecar: `data_through`, `provisional_from`, cell size, per-series dates | H1 (official, ING-8) |
+| `outages.india.csv` | India-wide outage days (158), for `pipeline/run.py --outages` on subsets | ING-6 (from `scripts/check_outages.py --csv`) |
 | `calibration.central-india.json` | The two conversion fits and their hold-out checks | Reference only |
 
-All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78.5–79.5 E (central India, the API spec's example area). That's 16 cells of 0.25°, 2000-12 to 2026-11, archive plus NRT, produced by `pipeline/run.py --res 0.25` on the current `main`.
+All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78.5–79.5 E (central India, the API spec's example area). That's 16 cells of 0.25°, 2000-12 to 2026-11, archive plus NRT, produced by `pipeline/run.py --res 0.25 --outages contracts/samples/outages.india.csv` on the current `main`. Outage days come from the India-wide list (`outages.india.csv`, 158 days), because a subset is too small to derive them.
 
 ## ⚠️ Stand-in for H2
 
@@ -36,6 +37,7 @@ All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78
 | Starts at **2000-12**, not 2000-11, so `meta.coverage.first_month` is `2000-12` | The table starts at the first month with a detection | ING-6 / ING-8 |
 | **No unavailable months** (no NaN in `harmonized_count`) | Every month in this range has a satellite | Test `unavailable` with the API spec mocks (A.1, A.2), or a request before `coverage.first_month` (→ `INVALID_DATES`) |
 | Calibration was fitted on these 16 cells only | The product fits once on the whole region | CAL-2 (Person 2) |
+| **Before 2012, cells with 0 detections show 4.4 (`AQUA_calibrated`) or 14.2 (`TERRA_chained`), not 0.** So there are no `zero` months before 2012, and e.g. Jun 2001 sums to ~242 from 1 real detection. Don't read these as real fires | The conversions have a positive intercept, so `apply_log_line(0) > 0` (CLAUDE.md, Known issues) | CAL-2 / CAL-3 (Person 2) |
 | NRT months (2026-08 on) include some non-vegetation detections | No static-source mask yet | ING-11 |
 
 `data_kind` is `real` because the detections are real. But these numbers are not product values: don't show them as results in the demo.

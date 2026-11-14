@@ -86,7 +86,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - Archive and NRT do not overlap. `provisional_from` = 2026-08 (first VIIRS NRT month).
 - NOAA-21 starts 2023-03-01 (data), S-NPP ends 2026-11-02.
 - MODIS `version` 6.03 (2000-2022), 61.03 (2023+). Calibration windows lie in 6.03.
-- Outage days: `docs/08-missing-data-table.md` (FIRMS list) checked against our raw files. See its last section: the list is incomplete for our region, and one row is a copy error. Rule: a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Observed days = mission days minus outage days. `scripts/check_outages.py` derives them. Never read an outage as zero fires; partial days count as observed (known limitation). The Readme/FAQ dates 2001-04-15, mid-Aug 2007 and 2009-04-21/22 are **not** full outages over India (detections present); 2002-03 is 03-20..03-28; 2001-06 is 06-15..07-03.
+- Outage days: `docs/08-missing-data-table.md` (FIRMS list) checked against our raw files. See its last section: the list is incomplete for our region, and one row is a copy error. Rule: a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Observed days = mission days minus outage days. `pipeline/ingest/outages.py` holds the rule (used by the pipeline and by `scripts/check_outages.py`); `pipeline/run.py` writes `outages.csv`. Never read an outage as zero fires; partial days count as observed (known limitation). The Readme/FAQ dates 2001-04-15, mid-Aug 2007 and 2009-04-21/22 are **not** full outages over India (detections present); 2002-03 is 03-20..03-28; 2001-06 is 06-15..07-03.
 - NRT day/night flag uses orbit direction, standard uses solar zenith angle.
 
 ## Decisions (proposed by the team, not all confirmed)
@@ -105,10 +105,10 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - `aggregate` builds the full month × cell grid per series: memory risk on large regions.
 - No de-duplication when overlapping downloads contain the same detection.
 - NRT static-source mask (ING-11) not built yet.
-- Outage days not used yet: normalization counts mission dates only (ING-6, input now in docs/08).
 - No `meta.json` yet (Person 2, CAL-1/CAL-4). Its `data_through`, `provisional_from` and cell size come from `normalized.meta.json` (ING-8); windows and baseline years still missing.
 - No daily counts, so month-to-date comparison is not possible yet.
-- Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`); tiny areas can make a satellite's first/last months look unobserved.
+- Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.
+- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. Central India sample: a cell with 0 detections becomes 4.4 (`AQUA_calibrated`) or 14.2 (`TERRA_chained`). Result: no `zero` months before 2012, quiet cells add a step at 2002-07 (14.2 to 4.4) and 2012-01 (4.4 to 0), and Jun 2001 shows 241.6 from 1 detection. Needs a fix that keeps 0 at 0; verify on the India-wide fit.
 
 ## Git conventions
 

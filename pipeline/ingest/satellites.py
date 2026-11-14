@@ -35,6 +35,9 @@ def load_config(path=CONFIG_PATH):
         raise ValueError(f"{path}: modis_confidence needs 0 <= low_below < high_from <= 100, got {conf}")
     if not cfg.get("cell_size_deg", 0) > 0:
         raise ValueError(f"{path}: cell_size_deg must be > 0")
+    out = cfg.get("outages") or {}
+    if not (out.get("firms_table") and out.get("min_neighbour_median", -1) >= 0 and out.get("window_days", 0) >= 5):
+        raise ValueError(f"{path}: outages needs firms_table, min_neighbour_median >= 0 and window_days >= 5, got {out}")
     return cfg
 
 
@@ -47,6 +50,10 @@ SERIES = {series: [name for name, s in CONFIG["satellites"].items() if s["series
 MODIS_CONF_LOW_BELOW = CONFIG["modis_confidence"]["low_below"]
 MODIS_CONF_HIGH_FROM = CONFIG["modis_confidence"]["high_from"]
 CELL_SIZE_DEG = CONFIG["cell_size_deg"]
+REPO_ROOT = CONFIG_PATH.parents[1]
+OUTAGE_TABLE = REPO_ROOT / CONFIG["outages"]["firms_table"]
+OUTAGE_MIN_NEIGHBOUR_MEDIAN = CONFIG["outages"]["min_neighbour_median"]
+OUTAGE_WINDOW_DAYS = CONFIG["outages"]["window_days"]
 
 # FIRMS `satellite` codes -> platform names. A lookup, not a tunable, so it stays in code.
 SAT_MAP = {"T": "Terra", "TERRA": "Terra", "A": "Aqua", "AQUA": "Aqua",
