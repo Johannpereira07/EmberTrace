@@ -1,0 +1,26 @@
+{
+  "data_through": "2026-11-13",
+  "provisional_from": "2026-08",
+  "source_series": "VIIRS",
+  "cell_size_deg": 0.25,
+  "by_series": {
+    "Terra": {
+      "first_day": "2000-12-13",
+      "last_day": "2026-11-12",
+      "archive_last_day": "2026-06-04",
+      "first_nrt_month": "2026-10"
+    },
+    "Aqua": {
+      "first_day": "2002-12-07",
+      "last_day": "2026-11-08",
+      "archive_last_day": "2026-06-21",
+      "first_nrt_month": "2026-11"
+    },
+    "VIIRS": {
+      "first_day": "2012-01-20",
+      "last_day": "2026-11-13",
+      "archive_last_day": "2026-07-31",
+      "first_nrt_month": "2026-08"
+    }
+  }
+}

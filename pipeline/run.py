@@ -23,6 +23,7 @@ Usage (from the repo root):
 Outputs (in --out):
   unified.csv           every detection in one schema
   normalized.csv        stage-4 table, the ingest -> model handoff (contracts/normalized.schema.md)
+  normalized.meta.json  data_through, provisional_from, cell size (same handoff)
   cell_month.csv        per cell x month: counts per series, harmonized value, source
   calibration.json      both fits + hold-out check
   calendar.csv          year x month harmonized counts for the whole AOI
@@ -35,7 +36,7 @@ import pandas as pd
 if __package__ in (None, ""):   # allow `python pipeline/run.py` as well as `python -m pipeline.run`
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pipeline.ingest import aggregate, load_many, restrict_to_loaded_data
+from pipeline.ingest import aggregate, coverage_info, load_many, restrict_to_loaded_data
 from pipeline.ingest.satellites import CELL_SIZE_DEG
 from pipeline.model import calendar, fit_log_line, harmonize, holdout_check
 
@@ -56,10 +57,13 @@ def main():
     # ---- ingest: stages 1-4 (Person 1)
     u = pd.concat([load_many(a.modis), load_many(a.viirs)], ignore_index=True)
     print(f"loaded {len(u):,} detections")
+    info = coverage_info(u, a.res)
+    print(f"data_through {info['data_through']}, provisional_from {info['provisional_from']}")
     restrict_to_loaded_data(u)
     u.to_csv(f"{a.out}/unified.csv", index=False)
     cm = aggregate(u, a.res)
     cm.to_csv(f"{a.out}/normalized.csv", index=False)   # handoff H1
+    json.dump(info, open(f"{a.out}/normalized.meta.json", "w"), indent=2)
 
     # ---- model: stages 5-7 (Person 2)
     a2v = fit_log_line(cm, "aqua_count_norm", "viirs_count_norm", a.a2v_window)

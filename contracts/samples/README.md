@@ -5,6 +5,7 @@
 | `normalized.central-india.csv` | Stage-4 table (ingest → model) | H1, `../normalized.schema.md` (official) |
 | `cell_month.central-india.csv` | Per cell and month: counts per series, harmonized value, source | H2, **stand-in** (see below) |
 | `meta.central-india.json` | Dataset facts for `GET /api/meta` | H2, **stand-in**, fields from API spec §4 |
+| `normalized.meta.central-india.json` | H1 sidecar: `data_through`, `provisional_from`, cell size, per-series dates | H1 (official, ING-8) |
 | `calibration.central-india.json` | The two conversion fits and their hold-out checks | Reference only |
 
 All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78.5–79.5 E (central India, the API spec's example area). That's 16 cells of 0.25°, 2000-12 to 2026-11, archive plus NRT, produced by `pipeline/run.py --res 0.25` on the current `main`.
