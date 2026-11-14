@@ -216,7 +216,7 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | ING-11 | B | **NRT static-source mask** (see the method note below the table) | Mask applied to NRT; residual error measured on the last archive months and posted |
 | ING-9 | C | `make pipeline` runs ingest + model end to end in one command; performance check on the full grid | One command rebuilds all data |
 | ING-10 | D | **Real archive is in `data/raw/`** (India, 2000-11 to 2026-11-13): ingest a small region first, then the full region | Real normalized table for Person 2, or a note saying why not |
-| **Submission** | F | README: what EmberTrace is, how to run it, data credits (NASA FIRMS links) | README reviewed by one teammate |
+| **Submission** | F | README: what EmberTrace is, how to run it, data credits (NASA FIRMS links) | README reviewed by one teammate. **Drafted 14 Nov:** pipeline, data credits, limitations and future work are done; app run steps are added when `api/` and `web/` merge |
 
 **Method note: NRT static-source mask (ING-11).** Archive files tag every detection with `type` (0 = vegetation fire, 1 = volcano, 2 = other static land source such as industry, 3 = offshore). NRT files have no `type`, so the type 0 filter can't run on them. Static sources stay in the same place over the years, though, so the archive tells us where they are:
 
