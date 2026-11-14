@@ -47,7 +47,7 @@ Each cell-month has a true fire activity F (expected VIIRS detections per satell
 - **Ingest (stages 1–4): all PASS within 3%.** Terra 1.001, Aqua 1.005, VIIRS 0.998, NRT months after the mask 1.013. Planted ratios 4.007 and 1.251.
 - **End product (stages 5–7, Person 2), as of 14 Nov:**
   - `TERRA_chained` is 1.45× the truth and `AQUA_calibrated` 1.17×.
-  - Cells with 0 true fires come out as 4.9 / 2.2 instead of 0, the known zero-to-positive issue (CLAUDE.md, Known issues).
+  - Cells with 0 true fires come out as 4.9 / 2.2 instead of 0, the known zero-to-positive issue (AGENTS.md, Known issues).
   - Handovers: harmonized ×0.43 vs true ×0.20 at 2002-07, and ×0.42 vs true ×0.64 at 2012-01.
 
   CAL-2 / CAL-3 can use this as their known-answer test: after the fix, these should match the truth.

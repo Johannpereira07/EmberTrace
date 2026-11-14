@@ -1,5 +1,5 @@
 # EmberTrace pipeline config (stages 1-4). Owner: Person 1.
-# Every date and threshold the ingest code uses lives here, not in code (CLAUDE.md, "Nothing hard-coded").
+# Every date and threshold the ingest code uses lives here, not in code (AGENTS.md, "Nothing hard-coded").
 # Times are UTC. Write dates as quoted strings.
 
 # Grid cell size in degrees. Default for `pipeline/run.py --res`.

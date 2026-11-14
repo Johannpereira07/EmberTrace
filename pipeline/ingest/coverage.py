@@ -2,7 +2,7 @@
 
 data_through      last day with VIIRS data. VIIRS is the source of every month from 2012 on,
                   including the latest one whose completeness this decides (API spec 5.3).
-provisional_from  first month with VIIRS near-real-time (NRT) data (CLAUDE.md, data facts).
+provisional_from  first month with VIIRS near-real-time (NRT) data (AGENTS.md, data facts).
 
 Both come from ALL loaded rows, before filtering: a low-confidence detection still shows the
 satellite was observing that day. Per-series values are kept for transparency.

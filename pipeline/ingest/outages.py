@@ -1,6 +1,6 @@
 """ING-6: outage days per satellite, so an outage never reads as "observed, zero fires".
 
-Rule (docs/08, CLAUDE.md): a satellite-day is an OUTAGE only if the data has zero detections
+Rule (docs/08, AGENTS.md): a satellite-day is an OUTAGE only if the data has zero detections
 for that satellite that day AND (the FIRMS missing-data table lists it OR the neighbouring days'
 median count is at least `min_neighbour_median`). Any day with at least one detection is observed,
 even if FIRMS lists it. Daily counts use ALL rows (any confidence, any type): a low-confidence
