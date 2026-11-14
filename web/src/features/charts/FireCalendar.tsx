@@ -7,11 +7,12 @@
  * <FireCalendar response={apiResponse} mode="activity" | "anomaly" showProvenance={true} />
  */
 
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { FireCalendarProps, ChartExportRef } from './types';
 import { CalendarHeatmap } from './CalendarHeatmap';
 import { AnomalyHeatmap } from './AnomalyHeatmap';
 import { ChartLegend } from './ChartLegend';
+import { getSourceSpans } from './cellModel';
 
 export const FireCalendar = forwardRef<ChartExportRef, FireCalendarProps>(
   (
@@ -31,6 +32,7 @@ export const FireCalendar = forwardRef<ChartExportRef, FireCalendarProps>(
     ref
   ) => {
     const internalRef = useRef<ChartExportRef | null>(null);
+    const sourceSpans = useMemo(() => getSourceSpans(response), [response]);
 
     useImperativeHandle(ref, () => ({
       getSvgElement: () => internalRef.current?.getSvgElement() ?? null,
@@ -45,6 +47,7 @@ export const FireCalendar = forwardRef<ChartExportRef, FireCalendarProps>(
           type={mode}
           maxCount={response?.months.reduce((max, m) => Math.max(max, m.value ?? 0), 1) ?? 1000}
           onNoticeClick={(topic) => onNoticeRequest?.(topic)}
+          sources={showProvenance ? sourceSpans : []}
         />
 
         {/* Heatmap View */}

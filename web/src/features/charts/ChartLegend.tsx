@@ -6,12 +6,16 @@
 
 import React from 'react';
 import { VIRIDIS_STOPS, ANOMALY_PALETTE, SPECIAL_CELL_COLORS } from '../../styles/scales';
+import { SOURCE_INFO, formatMonthLabel } from './cellModel';
+import type { SourceSpan } from './types';
 
 interface LegendProps {
   type: 'activity' | 'anomaly';
   maxCount?: number;
   className?: string;
   onNoticeClick?: (topic: 'terra_chain' | 'provisional') => void;
+  /** Sources present in the response, with their first and last month (getSourceSpans). */
+  sources?: SourceSpan[];
 }
 
 export const ChartLegend: React.FC<LegendProps> = ({
@@ -19,6 +23,7 @@ export const ChartLegend: React.FC<LegendProps> = ({
   maxCount = 1000,
   className = '',
   onNoticeClick,
+  sources = [],
 }) => {
   return (
     <div
@@ -81,63 +86,46 @@ export const ChartLegend: React.FC<LegendProps> = ({
           </div>
         )}
 
-        <div className="flex items-center gap-4 text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <span
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: '#a855f7',
-                display: 'inline-block',
-                boxShadow: '0 0 8px rgba(168, 85, 247, 0.4)',
-              }}
-            />
-            <button
-              type="button"
-              className="hover:underline text-slate-300 hover:text-purple-300 cursor-pointer"
-              onClick={() => onNoticeClick?.('terra_chain')}
-            >
-              2000–02: Terra Chained ℹ️
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: '#3b82f6',
-                display: 'inline-block',
-                boxShadow: '0 0 8px rgba(59, 130, 246, 0.4)',
-              }}
-            />
-            <span className="text-slate-300">2002–11: Aqua Calibrated</span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span
-              style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: '#10b981',
-                display: 'inline-block',
-                boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)',
-              }}
-            />
-            <span className="text-slate-300">2012–Now: VIIRS</span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium">
-              [P] Provisional NRT
-            </span>
-          </div>
-        </div>
+        <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-slate-300" aria-label="Data sources">
+          {sources.map((span) => {
+            const info = SOURCE_INFO[span.source];
+            const text = `${info.label}: ${formatMonthLabel(span.from)} – ${formatMonthLabel(span.to)}`;
+            return (
+              <li key={span.source} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: info.color, display: 'inline-block' }}
+                />
+                {span.source === 'TERRA_chained' && onNoticeClick ? (
+                  <button
+                    type="button"
+                    className="hover:underline hover:text-purple-300 cursor-pointer text-left"
+                    onClick={() => onNoticeClick('terra_chain')}
+                  >
+                    {text}
+                  </button>
+                ) : (
+                  <span>{text}</span>
+                )}
+              </li>
+            );
+          })}
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden="true" style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+            <span>Provisional (near real-time)</span>
+          </li>
+          {type === 'anomaly' && (
+            <>
+              <li>
+                <span className="font-semibold text-slate-200">n/c</span> partial month, not comparable
+              </li>
+              <li>
+                <span className="font-semibold text-slate-200">–</span> no baseline (median 0 or too few years)
+              </li>
+            </>
+          )}
+        </ul>
       </div>
     </div>
   );
 };
-

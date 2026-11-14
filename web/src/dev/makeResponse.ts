@@ -5,7 +5,27 @@
  */
 
 import { CalendarApiResponse, ApiMonthData, SatelliteSensorSource } from '../../../contracts/api/types';
-import { START_YEAR, END_YEAR, START_MONTH, END_MONTH, isMonthInGlobalRange, getSensorSourceForDate } from '../features/charts/cellModel';
+
+// The mock's own calendar: real responses carry their range and each month's source, and the charts read
+// those from the response. Only this generator decides them from dates.
+export const START_YEAR = 2000;
+export const END_YEAR = 2026;
+export const START_MONTH = 11; // Nov 2000
+export const END_MONTH = 11; // Nov 2026
+
+export function isMonthInGlobalRange(year: number, month: number): boolean {
+  if (year < START_YEAR || year > END_YEAR) return false;
+  if (year === START_YEAR && month < START_MONTH) return false;
+  if (year === END_YEAR && month > END_MONTH) return false;
+  return true;
+}
+
+export function getSensorSourceForDate(year: number, month: number): SatelliteSensorSource {
+  if (!isMonthInGlobalRange(year, month)) return null;
+  if (year < 2002 || (year === 2002 && month < 7)) return 'TERRA_chained';
+  if (year < 2012) return 'AQUA_calibrated';
+  return 'VIIRS';
+}
 
 const SEASONAL_WEIGHTS = [
   0.4, 0.7, 1.5, 1.9, 1.6, 0.5,

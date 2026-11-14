@@ -4,49 +4,55 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  buildGridModel,
-  isMonthInGlobalRange,
-  getSensorSourceForDate,
-  START_YEAR,
-  END_YEAR,
-  TOTAL_ACTIVE_MONTHS,
-} from './cellModel';
+import { buildGridModel, getSourceSpans, getMonthRange } from './cellModel';
 import { generateNormalResponse, generateSparseResponse, generateEdgeCasesResponse } from '../../dev/makeResponse';
 
 describe('Cell Model & Matrix Tests', () => {
-  it('correctly calculates total range: 27 rows (2000 to 2026) and 313 active months', () => {
-    let activeMonthsCount = 0;
-    for (let yr = START_YEAR; yr <= END_YEAR; yr++) {
-      for (let mo = 1; mo <= 12; mo++) {
-        if (isMonthInGlobalRange(yr, mo)) {
-          activeMonthsCount++;
-        }
-      }
-    }
-    expect(END_YEAR - START_YEAR + 1).toBe(27);
-    expect(activeMonthsCount).toBe(TOTAL_ACTIVE_MONTHS);
-    expect(activeMonthsCount).toBe(313);
+  it('takes the range from the response, not from constants', () => {
+    const mock = generateNormalResponse();
+    const window = { ...mock, months: mock.months.filter((m) => m.month >= '2010-03' && m.month <= '2015-06') };
+    expect(getMonthRange(window)).toEqual({ first: '2010-03', last: '2015-06' });
+
+    const model = buildGridModel(window);
+    expect(model.rows.map((r) => r.year)).toEqual([2010, 2011, 2012, 2013, 2014, 2015]);
+    expect(model.rows[0].cells[1].isOutOfRange).toBe(true); // Feb 2010
+    expect(model.rows[0].cells[2].isOutOfRange).toBe(false); // Mar 2010
+    expect(model.rows[5].cells[6].isOutOfRange).toBe(true); // Jul 2015
   });
 
-  it('marks months before 2000-11 as out_of_range', () => {
-    expect(isMonthInGlobalRange(2000, 1)).toBe(false);
-    expect(isMonthInGlobalRange(2000, 10)).toBe(false);
-    expect(isMonthInGlobalRange(2000, 11)).toBe(true);
-    expect(isMonthInGlobalRange(2000, 12)).toBe(true);
+  it('reads each month\'s source from the response and flags the handovers', () => {
+    const model = buildGridModel(generateNormalResponse());
+    const handovers = model.rows.flatMap((r) => r.cells.filter((c) => c.isHandover).map((c) => `${c.monthStr} ${c.source}`));
+    expect(handovers).toEqual(['2002-07 AQUA_calibrated', '2012-01 VIIRS']);
+
+    const row2002 = model.rows.find((r) => r.year === 2002)!;
+    expect(row2002.sources).toEqual(['TERRA_chained', 'AQUA_calibrated']);
+    expect(model.rows.find((r) => r.year === 2012)!.sources).toEqual(['VIIRS']);
   });
 
-  it('correctly attributes satellite sensor source across transitions', () => {
-    expect(getSensorSourceForDate(2000, 11)).toBe('TERRA_chained');
-    expect(getSensorSourceForDate(2002, 6)).toBe('TERRA_chained');
+  it('never invents a source for a month the response leaves without one', () => {
+    const mock = generateNormalResponse();
+    const gap = { ...mock, months: mock.months.map((m) => (m.month === '2005-04' ? { ...m, source: null, value: null, state: 'unavailable' as const } : m)) };
+    const cell = buildGridModel(gap).rows.find((r) => r.year === 2005)!.cells[3];
+    expect(cell.source).toBeNull();
+    expect(cell.isHandover).toBe(false);
+    expect(buildGridModel(gap).rows.find((r) => r.year === 2005)!.cells[4].isHandover).toBe(false); // same source after the gap
+  });
 
-    // Handover 1: Jul 2002 -> Aqua calibrated
-    expect(getSensorSourceForDate(2002, 7)).toBe('AQUA_calibrated');
-    expect(getSensorSourceForDate(2011, 12)).toBe('AQUA_calibrated');
+  it('lists each source\'s span for the legend', () => {
+    expect(getSourceSpans(generateNormalResponse())).toEqual([
+      { source: 'TERRA_chained', from: '2000-11', to: '2002-06' },
+      { source: 'AQUA_calibrated', from: '2002-07', to: '2011-12' },
+      { source: 'VIIRS', from: '2012-01', to: '2026-11' },
+    ]);
+  });
 
-    // Handover 2: Jan 2012 -> VIIRS
-    expect(getSensorSourceForDate(2012, 1)).toBe('VIIRS');
-    expect(getSensorSourceForDate(2026, 11)).toBe('VIIRS');
+  it('takes the partial flag from the response only', () => {
+    const mock = generateNormalResponse();
+    const notPartial = { ...mock, months: mock.months.map((m) => ({ ...m, partial: false })) };
+    const rows = buildGridModel(notPartial).rows;
+    const last = rows[rows.length - 1].cells[10];
+    expect(last.isPartial).toBe(false);
   });
 
   it('builds a 27-row grid from normal mock response', () => {

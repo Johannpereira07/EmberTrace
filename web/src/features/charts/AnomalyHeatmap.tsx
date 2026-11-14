@@ -7,6 +7,7 @@
 import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { CalendarApiResponse, GridCell, ChartExportRef, NoticeTopic } from './types';
 import { buildGridModel, MONTH_NAMES } from './cellModel';
+import { RowLabel, HandoverEdge, ROW_LABEL_WIDTH } from './SourceMarks';
 import { getAnomalyColor, formatAnomaly, SPECIAL_CELL_COLORS } from '../../styles/scales';
 
 export interface AnomalyHeatmapProps {
@@ -20,6 +21,13 @@ export interface AnomalyHeatmapProps {
   showSensorMarkers?: boolean;
   className?: string;
 }
+
+/** Short codes for months that have a count but no anomaly ratio (explained in the legend). */
+export const NO_RATIO_CODE: Partial<Record<string, string>> = {
+  non_comparable_partial: 'n/c',
+  not_defined: '–',
+  not_enough_history: '–',
+};
 
 export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
   (
@@ -42,7 +50,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
     const CELL_WIDTH = 46;
     const CELL_HEIGHT = 22;
     const CELL_GAP = 3;
-    const LEFT_LABEL_WIDTH = 55;
+    const LEFT_LABEL_WIDTH = ROW_LABEL_WIDTH;
     const TOP_HEADER_HEIGHT = 34;
 
     const gridWidth = LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 20;
@@ -144,7 +152,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
               userSelect: 'none',
             }}
             role="img"
-            aria-label="Harmonized Fire Anomaly Heatmap (2000-2026)"
+            aria-label={`Harmonized fire anomaly calendar${model.rows.length ? `, ${model.rows[0].year} to ${model.rows[model.rows.length - 1].year}` : ''}`}
           >
           <rect x="0" y="0" width={gridWidth} height={gridHeight} rx="12" fill="#090d16" stroke="#1e293b" strokeWidth="1" />
 
@@ -167,53 +175,22 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
           {model.rows.map((row, rIdx) => {
             const yPos = TOP_HEADER_HEIGHT + rIdx * (CELL_HEIGHT + CELL_GAP);
             const isSelectedYear = selectedYear === row.year;
-            const isHandover2002 = showSensorMarkers && row.year === 2002;
-            const isHandover2012 = showSensorMarkers && row.year === 2012;
 
             return (
               <g key={row.year} transform={`translate(0, ${yPos})`}>
-                <text
-                  x={LEFT_LABEL_WIDTH - 12}
-                  y={CELL_HEIGHT / 2 + 4}
-                  textAnchor="end"
-                  fontSize="12"
-                  fontWeight={isSelectedYear ? '700' : '500'}
-                  fill={isSelectedYear ? '#38bdf8' : '#94a3b8'}
-                >
-                  {row.year}
-                </text>
-
-                {isHandover2002 && (
-                  <line
-                    x1={LEFT_LABEL_WIDTH - 6}
-                    y1="0"
-                    x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
-                    y2="0"
-                    stroke="#a855f7"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                    opacity="0.9"
-                  />
-                )}
-                {isHandover2012 && (
-                  <line
-                    x1={LEFT_LABEL_WIDTH - 6}
-                    y1="0"
-                    x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP)}
-                    y2="0"
-                    stroke="#10b981"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                    opacity="0.9"
-                  />
-                )}
+                <RowLabel row={row} cellHeight={CELL_HEIGHT} selected={isSelectedYear} showSource={showSensorMarkers} />
 
                 {row.cells.map((cell, cIdx) => {
                   const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
                   const isSelected = isSelectedYear && selectedMonth === cell.month;
+                  // Months with a count but no ratio get a dark dashed cell and a short code, so they can't
+                  // be read as the white "1.0x normal" colour.
+                  const noRatio = !cell.isOutOfRange && cell.value !== null ? NO_RATIO_CODE[cell.anomalyState] : undefined;
                   const colorInfo = cell.isOutOfRange
                     ? { fill: '#0f172a', stroke: '#1e293b', textColor: '#64748b' }
-                    : getAnomalyColor(cell.anomaly, cell.anomalyState);
+                    : noRatio
+                      ? { fill: '#0b1120', stroke: '#64748b', textColor: '#94a3b8' }
+                      : getAnomalyColor(cell.anomaly, cell.anomalyState);
 
                   return (
                     <g
@@ -237,9 +214,24 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                         fill={colorInfo.fill}
                         stroke={isSelected ? '#38bdf8' : colorInfo.stroke}
                         strokeWidth={isSelected ? '2' : '1'}
+                        strokeDasharray={noRatio && !isSelected ? '3 2' : undefined}
                       />
 
-                      {!cell.isOutOfRange && cell.anomaly !== null && (
+                        {showSensorMarkers && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
+
+                      {cell.isProvisional && !cell.isOutOfRange && (
+                        <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b">
+                          <title>Provisional NRT</title>
+                        </rect>
+                      )}
+
+                      {noRatio && (
+                        <text x={CELL_WIDTH / 2} y={CELL_HEIGHT / 2 + 3.5} textAnchor="middle" fontSize="9.5" fill={colorInfo.textColor}>
+                          {noRatio}
+                        </text>
+                      )}
+
+                      {!cell.isOutOfRange && !noRatio && cell.anomaly !== null && (
                         <text
                           x={CELL_WIDTH / 2}
                           y={CELL_HEIGHT / 2 + 3.5}
