@@ -22,5 +22,12 @@
       "archive_last_day": "2026-07-31",
       "first_nrt_month": "2026-08"
     }
+  },
+  "outage_days": {
+    "Aqua": 31,
+    "NOAA-20": 6,
+    "NOAA-21": 2,
+    "SNPP": 50,
+    "Terra": 69
   }
 }

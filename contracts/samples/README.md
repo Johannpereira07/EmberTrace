@@ -6,9 +6,10 @@
 | `cell_month.central-india.csv` | Per cell and month: counts per series, harmonized value, source | H2, **stand-in** (see below) |
 | `meta.central-india.json` | Dataset facts for `GET /api/meta` | H2, **stand-in**, fields from API spec §4 |
 | `normalized.meta.central-india.json` | H1 sidecar: `data_through`, `provisional_from`, cell size, per-series dates | H1 (official, ING-8) |
+| `outages.india.csv` | India-wide outage days (158), for `pipeline/run.py --outages` on subsets | ING-6 (from `scripts/check_outages.py --csv`) |
 | `calibration.central-india.json` | The two conversion fits and their hold-out checks | Reference only |
 
-All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78.5–79.5 E (central India, the API spec's example area). That's 16 cells of 0.25°, 2000-12 to 2026-11, archive plus NRT, produced by `pipeline/run.py --res 0.25` on the current `main`.
+All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78.5–79.5 E (central India, the API spec's example area). That's 16 cells of 0.25°, 2000-12 to 2026-11, archive plus NRT, produced by `pipeline/run.py --res 0.25 --outages contracts/samples/outages.india.csv` on the current `main`. Outage days come from the India-wide list (`outages.india.csv`, 158 days), because a subset is too small to derive them.
 
 ## ⚠️ Stand-in for H2
 

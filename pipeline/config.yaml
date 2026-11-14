@@ -26,6 +26,13 @@ satellites:
     series: VIIRS
     start: "2023-03-01"       # first detections in the real archive (docs/07); 2024-01-17 is superseded
 
+# Outage days (ING-6, rule in docs/08). A satellite-day with zero detections is an outage if the
+# FIRMS table lists it, or if the median of the surrounding `window_days` days is >= min_neighbour_median.
+outages:
+  firms_table: docs/08-missing-data-table.md   # relative to the repo root
+  min_neighbour_median: 20   # PROVISIONAL placeholder, not validated
+  window_days: 31
+
 # MODIS confidence (0-100) -> class. Below `low_below` is low, below `high_from` is nominal, else high.
 # STATUS: ASSUMED (30 / 80 are not verified against the FIRMS user guide). Label them as assumed.
 modis_confidence:
