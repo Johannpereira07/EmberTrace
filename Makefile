@@ -1,5 +1,5 @@
 # EmberTrace Makefile. Owner: Person 3.
-# Deployment targets only for now; pipeline/api/web/test targets from docs/03 §6 get added as those layers land.
+# Pipeline, API and deployment targets. web/web-live (docs/03 §6) get added as that layer lands.
 
 PROJECT ?= embertrace-nasa26
 REGION  ?= asia-south1
@@ -8,7 +8,11 @@ IMAGE   ?= embertrace:local
 PYTHON  ?= python
 OUT     ?= out
 
-.PHONY: pipeline pipeline-test synthetic export splice-check check-data docker-build docker-run deploy demo-on demo-off url logs
+# Data the local API serves. Until Person 2's H2 lands: the stand-in sample (contracts/samples/README.md).
+# After `make pipeline`: make api API_DATA="DATA_DIR=data"
+API_DATA ?= DATA_DIR=contracts/samples CELL_MONTH_FILE=cell_month.central-india.csv META_FILE=meta.central-india.json
+
+.PHONY: pipeline pipeline-test synthetic export splice-check api-deps api test contract-test fixtures check-data docker-build docker-run deploy demo-on demo-off url logs
 
 # ---- Pipeline (Person 1, ING-9). Full India run: about 2 min, peak about 4.6 GB RAM (docs/09).
 # Writes $(OUT)/ (gitignored). Exporting data/cell_month.parquet + data/meta.json for the app is CAL-4 (Person 2).
@@ -36,6 +40,25 @@ synthetic:
 	  --viirs "$(OUT)/synthetic/raw/DL_FIRE_*V-C2_*/fire_*.csv" --out $(OUT)/synthetic
 	$(PYTHON) tools/synthetic/check.py $(OUT)/synthetic
 
+# ---- API (Person 3)
+api-deps:
+	$(PYTHON) -m pip install -r api/requirements-dev.txt
+
+# Run the API locally at http://localhost:8000 (docs at /docs)
+api:
+	$(API_DATA) $(PYTHON) -m uvicorn api.main:app --reload --port 8000
+
+# All tests: pipeline + API. splice-check joins once it passes (CAL-5).
+test: pipeline-test
+	$(PYTHON) -m pytest api/tests -q
+
+# Mock files = live API = contracts/api/types.ts
+contract-test:
+	$(PYTHON) -m pytest api/tests/test_contract.py -q
+
+# Regenerate contracts/fixtures/*.json from the live API (on the stand-in sample until H2 lands)
+fixtures:
+	$(API_DATA) $(PYTHON) -m api.fixtures
 
 check-data:
 	@test -f data/cell_month.parquet || (echo "data/cell_month.parquet missing: run 'make pipeline && make export' first" && exit 1)

@@ -30,10 +30,12 @@ Exists now:
 - `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
 - `Dockerfile`, `Makefile`, `README.md`, `docs/`.
 
+- `api/` (Person 3): FastAPI (`make api`), tests in `api/tests/` (`make test`, `make contract-test`). Contract (handoff H3) in `contracts/api/types.ts` + `contracts/fixtures/*.json` (`make fixtures`). Still serves the stand-in sample by default (`API_DATA` in the Makefile).
+- `web/` (Person 4 app, Person 5 charts): React + Vite + TypeScript, react-leaflet + leaflet-draw, D3 scales + SVG charts. `cd web && npm ci && npm run dev | build | test`. Chart rules: `web/src/features/charts/AGENTS.md`.
+
 Planned (docs/03 §2), not created yet:
-- `api/`: FastAPI. Contract in `contracts/api/types.ts` + `contracts/fixtures/*.json`.
-- `web/`: React + Vite + TypeScript, react-leaflet + leaflet-draw, D3 scales + SVG charts.
-- Tests for `pipeline/model/` (Person 2), `api/` and `web/`.
+- Tests for `pipeline/model/` (Person 2).
+- `make web | web-live`.
 
 Deploy: one Docker container (root `Dockerfile`) on **Google Cloud Run**, `asia-south1`. API under `/api`, frontend at `/`, data baked into the image. Backup: frontend in mock mode. See `docs/06-deployment.md`.
 
@@ -55,7 +57,7 @@ python -m pytest pipeline/tests
 
 Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.
 
-Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | export | splice-check | pipeline-test | synthetic | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
+Make targets: `make web | web-live` (planned); `make pipeline | export | splice-check | pipeline-test | synthetic | api-deps | api | test | contract-test | fixtures | docker-run | deploy | demo-on | demo-off | url | logs` (exist). `make test` runs the pipeline and API tests.
 
 ## Method (do not change without asking)
 

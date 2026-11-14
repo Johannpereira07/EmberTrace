@@ -1,0 +1,5 @@
+{
+  "_note": "PROVISIONAL placeholder thresholds (PRD D5, docs/03 §4): set by the team after seeing real data. Override with env LOW_COUNT_THRESHOLD / MIN_BASELINE_YEARS.",
+  "low_count_threshold": 10,
+  "min_baseline_years": 5
+}
