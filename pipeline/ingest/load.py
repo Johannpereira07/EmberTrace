@@ -4,7 +4,7 @@ import glob
 import numpy as np
 import pandas as pd
 
-from .satellites import MODIS_PLATFORMS, SAT_MAP
+from .satellites import MODIS_CONF_HIGH_FROM, MODIS_CONF_LOW_BELOW, MODIS_PLATFORMS, SAT_MAP
 
 
 def load(path):
@@ -18,7 +18,8 @@ def load(path):
     conf_num = pd.to_numeric(df["confidence"], errors="coerce")             # MODIS: 0-100
     conf_txt = df["confidence"].str.strip().str.lower().str[0].map(          # VIIRS: l/n/h or words
         {"l": "low", "n": "nominal", "h": "high"})
-    conf_from_num = pd.Series(np.select([conf_num < 30, conf_num < 80], ["low", "nominal"], "high"),
+    conf_from_num = pd.Series(np.select([conf_num < MODIS_CONF_LOW_BELOW, conf_num < MODIS_CONF_HIGH_FROM],  # config.yaml (assumed)
+                                        ["low", "nominal"], "high"),
                               index=df.index).where(conf_num.notna())
     conf_class = conf_from_num.where(sensor == "MODIS", conf_txt)
     t4 = df["brightness"] if "brightness" in df.columns else df.get("bright_ti4")

@@ -1,0 +1,61 @@
+# EmberTrace pipeline config (stages 1-4). Owner: Person 1.
+# Every date and threshold the ingest code uses lives here, not in code (AGENTS.md, "Nothing hard-coded").
+# Times are UTC. Write dates as quoted strings.
+
+# Grid cell size in degrees. Default for `pipeline/run.py --res`.
+cell_size_deg: 0.25
+
+# Satellites: which series each belongs to and when it observed.
+# `end` is optional: leave it out while a satellite is still operating, or when sources conflict.
+satellites:
+  Terra:
+    series: Terra
+    start: "2000-11-01"
+    # no end: Terra/Aqua end dates conflict between sources (docs/03 §4), so don't hard-code one
+  Aqua:
+    series: Aqua
+    start: "2002-07-04"
+  SNPP:
+    series: VIIRS
+    start: "2012-01-20"
+    end: "2026-11-02 13:00"   # S-NPP stopped producing FIRMS data at 13:00 UTC (docs/03 §4)
+  NOAA-20:
+    series: VIIRS
+    start: "2018-04-01"
+  NOAA-21:
+    series: VIIRS
+    start: "2023-03-01"       # first detections in the real archive (docs/07); 2024-01-17 is superseded
+
+# Outage days (ING-6, rule in docs/08). A satellite-day with zero detections is an outage if the
+# FIRMS table lists it, or if the median of the surrounding `window_days` days is >= min_neighbour_median.
+outages:
+  firms_table: docs/08-missing-data-table.md   # relative to the repo root
+  min_neighbour_median: 20   # PROVISIONAL placeholder, not validated
+  window_days: 31
+
+# NRT static-source mask (ING-11, docs/10). NRT files have no `type`, so NRT detections inside
+# squares of `cell_deg` that had >= `min_hits` archive detections of type 1/2/3 (per sensor) are dropped.
+# `dilate` grows the mask by that many squares. PROVISIONAL: chosen on Jan-Apr 2026, checked on May-Aug 2026.
+nrt_static_mask:
+  cell_deg: 0.005
+  min_hits: 5
+  dilate: 0
+
+# "No jump" check at the handovers (CAL-5, science/splice_check.py). PROVISIONAL rule and numbers.
+# Source handovers: in the `window_months` after the handover both sources exist; the step is the
+#   new source / the old source (both converted to VIIRS-equivalent) and must be within 1 +/- tolerance.
+# Satellite handovers (no overlap series): the month-to-month change must be within [min, max] of the
+#   same calendar change in other years (weak check: seasons vary a lot).
+# Synthetic: harmonized / planted truth, before vs after, within 1 +/- truth_tolerance.
+splice_check:
+  source_handovers: ["2002-07", "2012-01"]
+  satellite_handovers: ["2023-03"]
+  window_months: 12
+  tolerance: 0.05
+  truth_tolerance: 0.05
+
+# MODIS confidence (0-100) -> class. Below `low_below` is low, below `high_from` is nominal, else high.
+# STATUS: ASSUMED (30 / 80 are not verified against the FIRMS user guide). Label them as assumed.
+modis_confidence:
+  low_below: 30
+  high_from: 80

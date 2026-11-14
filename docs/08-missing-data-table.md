@@ -125,7 +125,7 @@ This table provides a list of days where data is missing from the NASA FIRMS dat
 
 The "weaker" days have so few detections around them that a natural zero day is possible.
 
-**Readme/FAQ dates in CLAUDE.md, checked:**
+**Readme/FAQ dates in AGENTS.md, checked:**
 
 | Readme/FAQ | Our data |
 |---|---|
@@ -155,4 +155,6 @@ The "weaker" days have so few detections around them that a natural zero day is 
 
 The rule checks each satellite on its own, so on a day when every flying satellite is empty, every satellite gets an outage. In our data this happens on **28 days, all from the period when Terra was the only satellite**: 2001-06-16..07-02, 2001-10-07, 2002-03-20..28 and 2002-04-15. From July 2002 on, there are **64 days when both Terra and Aqua are empty**, all between 2002 and 2011 and all in June to September (the monsoon, when fires over India are rare). On none of them did the surrounding days clearly have detections (combined median below 20), so the rule counts them as "observed, zero fires", which is most likely correct. There's no all-empty day once VIIRS flies (2012 on). `scripts/check_outages.py` warns about an all-empty day with 2 or more satellites flying only when the surrounding days clearly have detections. Such a day would point to a problem with our download. Today there are none.
 
-**Rule for the pipeline (ING-6):** a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Partial days (fewer detections than usual) count as fully observed, which is a known limitation of at most about 3% of a month's weight per day. The cut-off for "clearly non-zero" is a config value, labeled provisional. `scripts/check_outages.py` applies this rule and regenerates the lists above.
+**NRT period:** the full pipeline run (`docs/09`), which also reads the NRT files, finds one more empty day: **S-NPP 2026-08-03** (0 detections, neighbouring days' median ~56, not in the FIRMS table). That makes 159 outage days in total.
+
+**Rule for the pipeline (ING-6):** a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Partial days (fewer detections than usual) count as fully observed, which is a known limitation of at most about 3% of a month's weight per day. The cut-off for "clearly non-zero" is a config value, labeled provisional. The rule is coded once in `pipeline/ingest/outages.py`: `pipeline/run.py` applies it (and writes `outages.csv`), and `scripts/check_outages.py` regenerates the lists above.

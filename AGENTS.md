@@ -1,35 +1,125 @@
-# EmberTrace Agent Guidelines (NASA Space Apps Challenge 2026)
+# AGENTS.md
 
-## Project Overview
-- **Challenge:** Challenge 15: Harmonization of MODIS and VIIRS Hot Spots
-- **Product Name:** EmberTrace
-- **Success Test:** No visible jump in the calendar at the sensor handovers (Jul 2002 and Jan 2012).
-- **Core Principle:** Demonstration data (synthetic + two 1-day samples) must be clearly labeled as such everywhere (UI and exports).
+Shared instructions for every AI coding agent on this repo. Antigravity, Codex and other tools read this file; Claude Code reads it through `CLAUDE.md`, which only contains `@AGENTS.md`. **Edit this file, not CLAUDE.md.**
 
-## Role 5: Charts Engineer (Current Agent / Copilot Workspace)
-- **Owned paths ONLY:**
-  - `web/src/features/charts/`
-  - `web/src/features/insights/`
-  - `web/src/styles/scales.ts`
-  - `web/src/dev/ChartPlayground.tsx`
-- Do NOT edit pipeline code (`harmonize.py`) or backend API routes owned by other teammates without contract sync.
+EmberTrace: NASA Space Apps 2026, Challenge 15 (harmonizing MODIS + VIIRS fire hotspots). See @docs/00-problem-statement.md for the challenge requirements.
 
-## Strict Rules & Conventions
-1. **Zero vs NaN / Unavailable:**
-   - 0 detections = real observation of zero fires. Displayed as hollow cell with outline (`#ffffff` fill, `#94a3b8` stroke), NOT lowest ramp color.
-   - NaN / Unavailable = missing data / no satellite observing. Displayed as muted gray (`#e2e8f0`). Never mix NaN and 0!
-2. **Color Scales:**
-   - Counts: Viridis sequential palette with square-root scaling `Math.sqrt(count / maxCount)`.
-   - Anomalies: Diverging Blue (< 1.0x, suppressed) to Neutral White (1.0x, normal) to Orange/Red (> 1.0x, elevated). Centered on 1.0.
-   - Math safety: Always guard anomaly ratio when 0: clamp to minimum 0.05 before `Math.log2` to prevent `-Infinity`.
-3. **Calendar Dimensions:**
-   - Chronological top-to-bottom: Oldest year at top (2000 at top, 2026 at bottom).
-   - Range: Nov 2000 to Nov 2026 = 27 rows x 12 columns = exactly 313 active months.
-   - Out-of-range cells (e.g. Jan-Oct 2000) are grayed out (`#f8fafc`).
-4. **Sensor Epochs & Handover Accents:**
-   - Nov 2000 – Jun 2002: Terra chained (least certain; purple indicator).
-   - Jul 2002 – Dec 2011: Aqua calibrated (blue indicator). Handover 1 at Jul 2002.
-   - Jan 2012 – Nov 2026: VIIRS (green indicator). Handover 2 at Jan 2012.
-5. **Watermark & Export:**
-   - Exported SVGs and PNGs must render text and fills with absolute colors (no CSS variables) and contain the synthetic demonstration disclaimer.
+Harmonize MODIS and VIIRS active-fire hotspots (NASA FIRMS) into one consistent VIIRS-equivalent monthly series per grid cell, Nov 2000 to today. A FastAPI backend sums it over a user-selected area. A React frontend shows a year × month calendar, an anomaly calendar (vs the historical median) and quality flags, and offers CSV and chart downloads. Users: emergency responders, scientists, land managers.
 
+## Docs (read before non-trivial work)
+
+- **The PRD (`docs/01-prd.md`) is the source of truth.** It overrides every other doc and this file.
+- **If docs disagree with the PRD, with each other, or with this file, or anything is unclear: stop and ask. Do not pick a side.**
+- `docs/README.md` is the index.
+- `docs/02-architecture-methodology.md` is an **outdated draft**. Use it for the science, but check its banner for superseded facts.
+- `docs/05-task-delegation-prep.md` is historical (pre-hackathon roles).
+- `docs/07-data-profile.md` is the profile of our real FIRMS files (from `scripts/profile_raw.py`). It beats the "assumed" facts below.
+
+## Repo layout
+
+Exists now:
+- `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
+- `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model).
+- `science/splice_check.py` (`make splice-check`, CAL-5): the "no jump" check. For source handovers (2002-07, 2012-01) it compares both sources, converted, in the 12 months after (they overlap), so a step of x1 means no jump. 2023-03 gets a weaker month-to-month check. Exits 1 on FAIL. **Today: FAIL at 2002-07 (x0.38) and 2012-01 (x0.77) on the full India run**, from the zero-to-positive issue. Rule and tolerance (5%) are provisional, in config.yaml.
+- `pipeline/export.py` (`make export`): writes the app's data, `data/cell_month.parquet` + `data/meta.json` + `data/calibration.json` (handoff H2: `contracts/cell_month.schema.md`, `contracts/meta.schema.json`; CAL-4). The committed files are the full India run, labelled `pipeline_version: 0.1-calibration-pending` until the stage 5-7 fix. Regenerate with `make pipeline && make export`.
+- `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
+- `pipeline/config.yaml`: satellite dates and series, MODIS confidence thresholds (assumed), default cell size. Read and checked by `pipeline/ingest/satellites.py`; a bad value fails loudly (ING-2).
+- `pipeline/tests/ingest/`: pytest tests for stages 1-4.
+- `tools/synthetic/`: synthetic FIRMS files with a planted answer (ING-7). `make synthetic` generates them, runs the pipeline and checks the result against the truth (about 6 s). Output is labelled `data_kind: synthetic`; see its README.
+- `scripts/profile_raw.py`: profiles the raw FIRMS files (columns, codes, date ranges).
+- `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
+- `Dockerfile`, `Makefile`, `README.md`, `docs/`.
+
+- `api/` (Person 3): FastAPI (`make api`), tests in `api/tests/` (`make test`, `make contract-test`). Contract (handoff H3) in `contracts/api/types.ts` + `contracts/fixtures/*.json` (`make fixtures`). Still serves the stand-in sample by default (`API_DATA` in the Makefile).
+- `web/` (Person 4 app, Person 5 charts): React + Vite + TypeScript, react-leaflet + leaflet-draw, D3 scales + SVG charts. `cd web && npm ci && npm run dev | build | test`. Chart rules: `web/src/features/charts/AGENTS.md`.
+
+Planned (docs/03 §2), not created yet:
+- Tests for `pipeline/model/` (Person 2).
+- `make web | web-live`.
+
+Deploy: one Docker container (root `Dockerfile`) on **Google Cloud Run**, `asia-south1`. API under `/api`, frontend at `/`, data baked into the image. Backup: frontend in mock mode. See `docs/06-deployment.md`.
+
+Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` change only with team agreement.
+
+## Commands
+
+```
+pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
+make pipeline        # full India run into out/: about 2 min, peak about 4.6 GB RAM (docs/09)
+make pipeline-test
+make splice-check    # "no jump" check at the handovers (CAL-5); exits 1 on FAIL
+make export          # out/ -> data/cell_month.parquet + data/meta.json for the API (CAL-4)
+make synthetic       # synthetic data with a planted answer: generate, run, check (no real data needed)
+python scripts/profile_raw.py
+python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
+python -m pytest pipeline/tests
+```
+
+Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.
+
+Make targets: `make web | web-live` (planned); `make pipeline | export | splice-check | pipeline-test | synthetic | api-deps | api | test | contract-test | fixtures | docker-run | deploy | demo-on | demo-off | url | logs` (exist). `make test` runs the pipeline and API tests.
+
+## Method (do not change without asking)
+
+1. Three series: Terra, Aqua, VIIRS (S-NPP + NOAA-20 + NOAA-21 combined).
+2. Filter: drop confidence `low`; for archive files keep `type == 0` (vegetation fire). NRT files have no `type`: drop NRT detections inside the static-source mask built from archive type 1/2/3 locations (docs/03, ING-11 method note).
+3. Grid 0.25°, count per cell per month. Missing (cell, month) = 0 only if a satellite was observing; NaN if not.
+4. Normalize: divide counts by the number of satellites observing that month (fractional for partial months).
+5. Conversions (log1p-log1p line + bias factor; needs >= 30 rows and >= 12 months):
+   - Aqua -> VIIRS, fitted 2012-01..2019-12 (before Terra/Aqua orbit drift; verify dates)
+   - Terra -> Aqua, fitted 2002-08..2011-12, used only for Nov 2000 - Jun 2002
+6. Final value per cell-month: VIIRS if present, else calibrated Aqua, else Terra chained via Aqua. Keep the `source` column: `VIIRS` (2012-01+), `AQUA_calibrated` (2002-07 to 2011-12), `TERRA_chained` (2000-11 to 2002-06).
+7. Calendar: year × month totals. Anomaly = value ÷ full-record median of the same calendar month.
+
+## Invariants (do not break)
+
+- **NaN ≠ 0.** NaN or `null` / `unavailable` means no satellite was observing. 0 / `zero` means observed with no fires. Keep this from the pipeline through the API, UI and CSV. Never write an unavailable month as 0. Raw count columns (`{s}_count`) are 0 even when the satellite wasn't flying: decide NaN vs 0 from `{s}_count_norm` (or the harmonized value / `source`), never from a raw count (contracts/normalized.schema.md).
+- **Never blend sensors after Jan 2012.** Never average MODIS and VIIRS.
+- **No per-request recalibration.** One fit per satellite pair for the whole region, done offline, never per selected area.
+- **Nothing hard-coded:** satellite dates, cell size, thresholds and provisional months come from config or `meta.json`.
+- Anomaly: a zero median gives `not_defined`, never infinity. A partial month gives `non_comparable_partial`.
+- Months are UTC months (`acq_date` is UTC).
+- Colorblind-safe scales (Cividis/Viridis; diverging blue↔orange centered on 1.0). Never use color alone to carry information.
+- Synthetic data is always labeled as demonstration data. Don't claim real-data validation until it has been done.
+- No silent row loss: warn or assert when rows are dropped, codes are unrecognised, or months are missing. When a real file contradicts an assumption, warn or fail loudly. Never silently drop or reinterpret rows.
+- Do not invent thresholds, numbers or data. Placeholders go in config and are labelled provisional.
+
+## Satellite dates and constants
+
+Terra 2000-11-01. Aqua 2002-07-04. S-NPP 2012-01-20 to 2026-11-02 13:00 UTC. NOAA-20 2018-04-01.
+NOAA-21 2023-03-01: the archive file's first detections are on that date, matching PRD §9 and the FIRMS archive page. The 2024-01-17 correction in docs/03 §4 is superseded.
+
+## Data facts (verified: docs/07-data-profile.md + NASA FIRMS Readme, attributes page and FAQ)
+
+- Data: India, 0 km buffer, `data/raw/DL_FIRE_*`, each with `fire_archive_*.csv` (standard ML) and `fire_nrt_*.csv`. About 17.9M archive rows. Gitignored.
+- Sensor comes from the SATELLITE name (Terra, Aqua = MODIS; SNPP, N20, N21 = VIIRS). VIIRS files use MODIS-style column names.
+- Confidence: MODIS numeric 0-100, class cut-offs 30/80 **assumed** (not verified; label them as assumed); VIIRS l/n/h.
+- `type`: 0 vegetation fire, 1 volcano, 2 other static land source, 3 offshore. Archive only. NRT has no `type`. Static sources are 5-14% of detections over a year but **20-70% in the monsoon** (VIIRS 2025: Aug 70%, Sep 69%, Oct 43%), so unmasked NRT months were 2-4x too high. The static-source mask (ING-11, docs/10: 0.005° squares, >= 5 archive hits, provisional) brings NRT months within about ±4% of the true vegetation count (validated on archive data).
+- Archive and NRT do not overlap. `provisional_from` = 2026-08 (first VIIRS NRT month).
+- NOAA-21 starts 2023-03-01 (data), S-NPP ends 2026-11-02.
+- MODIS `version` 6.03 (2000-2022), 61.03 (2023+). Calibration windows lie in 6.03.
+- Outage days: `docs/08-missing-data-table.md` (FIRMS list) checked against our raw files. See its last section: the list is incomplete for our region, and one row is a copy error. Rule: a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Observed days = mission days minus outage days. `pipeline/ingest/outages.py` holds the rule (used by the pipeline and by `scripts/check_outages.py`); `pipeline/run.py` writes `outages.csv`. Never read an outage as zero fires; partial days count as observed (known limitation). The Readme/FAQ dates 2001-04-15, mid-Aug 2007 and 2009-04-21/22 are **not** full outages over India (detections present); 2002-03 is 03-20..03-28; 2001-06 is 06-15..07-03.
+- NRT day/night flag uses orbit direction, standard uses solar zenith angle.
+
+## Decisions (proposed by the team, not all confirmed)
+
+- Anomaly baseline = full record; UI shows "Baseline: N years".
+- Cell size 0.25°, read from `meta.json` everywhere.
+- Pipeline writes `provisional_from` (first NRT month) into `meta.json`.
+- Low-count and minimum-years thresholds are config values with placeholder defaults, labelled provisional.
+- Partial current month is labelled partial; its anomaly is "not comparable".
+- Raw detections download: Could Have (PRD 5.7). The endpoint returns 501 in the MVP; build a capped export only if every Must and Should is done by Block D. FRP: out of scope (no validated cross-sensor conversion).
+- Polygon selection is a Should; a lat/lon box is a Must.
+
+## Known issues (to do)
+
+- Anomaly with a zero calendar-month median is not yet handled in code: must return `not_defined` (blank + flag), not inf/NaN.
+- `grid_counts` builds the full month × cell grid per series: memory risk on regions much larger than India (India at 0.25° peaks at 4.6 GB, docs/09).
+- No de-duplication when overlapping downloads contain the same detection.
+- No daily counts, so month-to-date comparison is not possible yet.
+- Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.
+- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. **Confirmed on the full India run (docs/09):** a cell with 0 detections becomes 3.22 (`AQUA_calibrated`) or 18.26 (`TERRA_chained`), a floor of ~15,000 / ~84,900 per month over 4,651 cells. The Jun to Jul 2002 change is ×0.18 (normal ×0.81 to 0.98), a large artificial step, and 46% of the pre-2012 total comes from cells with 0 detections. Fails the PRD success test. Needs a fix that keeps 0 at 0.
+
+## Git conventions
+
+Branch `p<N>/<TASK-ID>-slug` (e.g. `p3/API-5-anomaly`). Commit `feat(api): ... [API-5]`. Keep PRs small, under about 300 lines. Run the tests before saying a task is done. Never commit credentials (`.env`) or real archive data.
