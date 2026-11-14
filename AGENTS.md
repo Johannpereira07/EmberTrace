@@ -20,6 +20,7 @@ Harmonize MODIS and VIIRS active-fire hotspots (NASA FIRMS) into one consistent 
 Exists now:
 - `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
 - `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model).
+- `science/splice_check.py` (`make splice-check`, CAL-5): the "no jump" check. For source handovers (2002-07, 2012-01) it compares both sources, converted, in the 12 months after (they overlap), so a step of x1 means no jump. 2023-03 gets a weaker month-to-month check. Exits 1 on FAIL. **Today: FAIL at 2002-07 (x0.38) and 2012-01 (x0.77) on the full India run**, from the zero-to-positive issue. Rule and tolerance (5%) are provisional, in config.yaml.
 - `pipeline/export.py` (`make export`): writes the app's data, `data/cell_month.parquet` + `data/meta.json` + `data/calibration.json` (handoff H2: `contracts/cell_month.schema.md`, `contracts/meta.schema.json`; CAL-4). The committed files are the full India run, labelled `pipeline_version: 0.1-calibration-pending` until the stage 5-7 fix. Regenerate with `make pipeline && make export`.
 - `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
 - `pipeline/config.yaml`: satellite dates and series, MODIS confidence thresholds (assumed), default cell size. Read and checked by `pipeline/ingest/satellites.py`; a bad value fails loudly (ING-2).
@@ -44,6 +45,7 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
 make pipeline        # full India run into out/: about 2 min, peak about 4.6 GB RAM (docs/09)
 make pipeline-test
+make splice-check    # "no jump" check at the handovers (CAL-5); exits 1 on FAIL
 make export          # out/ -> data/cell_month.parquet + data/meta.json for the API (CAL-4)
 make synthetic       # synthetic data with a planted answer: generate, run, check (no real data needed)
 python scripts/profile_raw.py
@@ -53,7 +55,7 @@ python -m pytest pipeline/tests
 
 Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.
 
-Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | export | pipeline-test | synthetic | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
+Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | export | splice-check | pipeline-test | synthetic | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
 
 ## Method (do not change without asking)
 

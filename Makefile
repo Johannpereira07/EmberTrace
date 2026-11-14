@@ -8,7 +8,7 @@ IMAGE   ?= embertrace:local
 PYTHON  ?= python
 OUT     ?= out
 
-.PHONY: pipeline pipeline-test synthetic export check-data docker-build docker-run deploy demo-on demo-off url logs
+.PHONY: pipeline pipeline-test synthetic export splice-check check-data docker-build docker-run deploy demo-on demo-off url logs
 
 # ---- Pipeline (Person 1, ING-9). Full India run: about 2 min, peak about 4.6 GB RAM (docs/09).
 # Writes $(OUT)/ (gitignored). Exporting data/cell_month.parquet + data/meta.json for the app is CAL-4 (Person 2).
@@ -19,6 +19,11 @@ pipeline:
 # Export the app's data (CAL-4, contracts/cell_month.schema.md): $(OUT)/ -> data/cell_month.parquet, data/meta.json
 export:
 	$(PYTHON) pipeline/export.py --run $(OUT) --out data
+
+# "No jump" check at the handovers (CAL-5): exits 1 on FAIL. Fails today at 2002-07 and 2012-01 (stage 5-7
+# zero-to-positive issue, docs/09); move it into `make test` once it passes.
+splice-check:
+	$(PYTHON) science/splice_check.py --run $(OUT)
 
 pipeline-test:
 	$(PYTHON) -m pytest pipeline/tests -q

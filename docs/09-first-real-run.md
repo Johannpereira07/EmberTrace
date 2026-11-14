@@ -62,7 +62,7 @@ The conversions have a positive intercept, so a cell with **0 detections** gets 
 - Of 623,234 pre-2012 cell-months, **558,233 have 0 detections**, and they contribute **3.07M of the 6.69M** (46%) pre-2012 harmonized total.
 - So there are no `zero` months before 2012, and annual totals for 2001 (1.18M) are about 2.5× those of 2003 to 2011.
 
-This **fails the PRD's success test** (no visible jump at 2002-07 and 2012-01). It's in Person 2's stages (CAL-2 / CAL-3, now flagged in their task rows): the conversions must map 0 to 0. Once fixed, rerun `make pipeline` and repeat the table above. That table is what the Sunday 12:00 go/no-go rule (docs/03 §7) checks.
+This **fails the PRD's success test** (no visible jump at 2002-07 and 2012-01). It's in Person 2's stages (CAL-2 / CAL-3, now flagged in their task rows): the conversions must map 0 to 0. Once fixed, rerun `make pipeline` and repeat the table above. That table is what the Sunday 12:00 go/no-go rule (docs/03 §7) checks. `make splice-check` (CAL-5) now automates it: on this run it reports **FAIL at 2002-07 (step ×0.38) and 2012-01 (×0.77)**, where ×1 means no jump.
 
 ## 5. How to reproduce
 

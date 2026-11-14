@@ -41,6 +41,19 @@ nrt_static_mask:
   min_hits: 5
   dilate: 0
 
+# "No jump" check at the handovers (CAL-5, science/splice_check.py). PROVISIONAL rule and numbers.
+# Source handovers: in the `window_months` after the handover both sources exist; the step is the
+#   new source / the old source (both converted to VIIRS-equivalent) and must be within 1 +/- tolerance.
+# Satellite handovers (no overlap series): the month-to-month change must be within [min, max] of the
+#   same calendar change in other years (weak check: seasons vary a lot).
+# Synthetic: harmonized / planted truth, before vs after, within 1 +/- truth_tolerance.
+splice_check:
+  source_handovers: ["2002-07", "2012-01"]
+  satellite_handovers: ["2023-03"]
+  window_months: 12
+  tolerance: 0.05
+  truth_tolerance: 0.05
+
 # MODIS confidence (0-100) -> class. Below `low_below` is low, below `high_from` is nominal, else high.
 # STATUS: ASSUMED (30 / 80 are not verified against the FIRMS user guide). Label them as assumed.
 modis_confidence:
