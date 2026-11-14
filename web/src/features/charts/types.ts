@@ -37,6 +37,8 @@ export interface GridCell {
   isLowCount: boolean;
   isOutOfRange: boolean;
   isZero: boolean;
+  /** First month of a new source (the month before had a different, non-null source). */
+  isHandover: boolean;
   tooltipText: string;
   ariaLabel: string;
 }
@@ -48,6 +50,15 @@ export interface YearRow {
   hasTerraChained: boolean;
   hasAquaCalibrated: boolean;
   hasViirs: boolean;
+  /** Sources in this year, in the order they first appear (from each month's `source`). */
+  sources: NonNullable<SatelliteSensorSource>[];
+}
+
+/** One source's stretch of the record, for the legend. */
+export interface SourceSpan {
+  source: NonNullable<SatelliteSensorSource>;
+  from: string; // 'YYYY-MM'
+  to: string; // 'YYYY-MM'
 }
 
 export interface GridModel {
@@ -57,6 +68,7 @@ export interface GridModel {
   monthlyMedians: number[]; // 12 entries: Jan to Dec
   meta: CalendarApiResponse['meta'] | null;
   warnings: ApiWarning[];
+  sourceSpans: SourceSpan[];
 }
 
 export type NoticeTopic = 'terra_chain' | 'provisional' | 'low_count' | 'synthetic_watermark';
