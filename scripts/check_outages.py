@@ -92,6 +92,25 @@ def main():
         for sat, day, _, m in sel:
             print(f"- {sat} {day} (neighbour median ~{m:,})")
         print()
+    # With two or more satellites flying, a day with no data from any of them while the
+    # neighbouring days clearly have data (same cut-off as the outage rule, on the combined
+    # count) points to a broken download rather than an outage. Warn loudly. Quiet seasons
+    # (e.g. monsoon days with only Terra + Aqua) can be empty naturally and are not flagged.
+    all_days = pd.date_range(min(s.index[0] for s in counts.values()), max(s.index[-1] for s in counts.values()))
+    total = sum(s.reindex(all_days, fill_value=0) for s in counts.values())
+    total_med = total.rolling(a.window, center=True, min_periods=5).median()
+    suspect = []
+    for day in all_days:
+        flying = [sat for sat, s in counts.items() if s.index[0] <= day <= s.index[-1]]
+        if len(flying) >= 2 and total[day] == 0 and total_med[day] >= a.min_neighbour_median:
+            suspect.append((day.date(), flying, int(total_med[day])))
+    print(f"## Days with no data from any of 2+ flying satellites, neighbours clearly non-zero "
+          f"(check the download): {len(suspect)}\n")
+    for day, flying, m in suspect:
+        print(f"- {day}: {', '.join(flying)} (combined neighbour median ~{m:,})")
+        print(f"WARNING {day}: no detections from any flying satellite ({', '.join(flying)}). "
+              "Check the download before treating this as an outage.", file=sys.stderr)
+    print()
     if outside:
         print(f"## Listed days outside our data range (ignored): {len(outside)}\n")
         print(", ".join(f"{s} {d}" for s, d in outside[:20]) + (" ..." if len(outside) > 20 else ""))
