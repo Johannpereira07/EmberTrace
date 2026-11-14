@@ -47,7 +47,7 @@ flowchart TD
 |---|---|---|---|
 | **Pipeline, stages 1 to 4**: clean, filter, grid, normalize | **Person 1** | A per-cell, per-month, per-satellite table with NaN and 0 kept separate | The pipeline code (`pipeline/run.py` + `pipeline/ingest/`, split from `harmonize.py` in ING-1) + the real FIRMS archive in `data/raw/` (see `docs/07-data-profile.md`) + synthetic data |
 | **Pipeline, stages 5 to 7 + precomputed data**: calibrate, harmonize, calendar, export | **Person 2** | `cell_month.parquet`, `calibration.json`, `meta.json`, and the automated "no jump" check | A small sample of Person 1's table (generated in the first hour from today's code) |
-| **Backend API** | **Person 3** | `GET /api/meta`, `POST /api/calendar`, `POST /api/download/monthly.csv`, deployment | A sample `cell_month.parquet` from Person 2 (first hour) and the API spec |
+| **Backend API** | **Person 3** | `GET /api/meta`, `POST /api/calendar`, `POST /api/download/monthly.csv`, deployment | A sample `cell_month.parquet` from Person 2 (first hour) and the API spec. **Until H2 lands:** the stand-in sample in `contracts/samples/` (`cell_month.central-india.csv` + `meta.central-india.json`; read its README) |
 | **Frontend: app, map, controls, data quality** | **Person 4** | Map selection, date range, API connection, warnings panel, CSV button, explainer | Mock API responses (already in the API spec) |
 | **Frontend: charts** | **Person 5** | Fire activity calendar, anomaly calendar, legends, provenance markers, chart export | Mock API responses (already in the API spec) |
 
@@ -250,7 +250,7 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | ID | Block | Task | Done when |
 |---|---|---|---|
 | API-1 | A | Repo setup, `Makefile`, H3 (`types.ts` + full-length mock files) | Persons 4 and 5 are building on the mocks |
-| API-2 | B | FastAPI app; load `cell_month.parquet` and `meta.json` at startup; `GET /api/meta` | Returns the spec shape |
+| API-2 | B | FastAPI app; load `cell_month.parquet` and `meta.json` at startup (until H2 lands, load the stand-in `contracts/samples/cell_month.central-india.csv` + `meta.central-india.json`; keep loading in one place); `GET /api/meta` | Returns the spec shape |
 | API-3 | B | `POST /api/calendar` input checks: lat/lon ranges, min < max, valid months inside coverage; all error codes (`INVALID_AOI`, `INVALID_DATES`, `EMPTY_AREA`, `OUT_OF_COVERAGE`) | Each error case tested |
 | API-4 | B | Snap area outward to whole cells; select cells; sum per month; `state` = value / zero / unavailable | NaN never becomes 0 |
 | API-5 | B | Anomaly: value ÷ full-record median for the same calendar month; states `ok`, `not_defined`, `not_enough_history`, `non_comparable_partial`, `unavailable` | Zero median gives `not_defined`, never infinity |

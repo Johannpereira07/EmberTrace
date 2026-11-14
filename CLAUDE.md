@@ -17,7 +17,8 @@ Harmonize MODIS and VIIRS active-fire hotspots (NASA FIRMS) into one consistent 
 
 Exists now:
 - `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
-- `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model), with a real-data sample in `contracts/samples/`.
+- `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model).
+- `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
 - `scripts/profile_raw.py`: profiles the raw FIRMS files (columns, codes, date ranges).
 - `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
 - `Dockerfile`, `Makefile`, `README.md`, `docs/`.
