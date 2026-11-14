@@ -21,6 +21,7 @@ Exists now:
 - `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
 - `pipeline/config.yaml`: satellite dates and series, MODIS confidence thresholds (assumed), default cell size. Read and checked by `pipeline/ingest/satellites.py`; a bad value fails loudly (ING-2).
 - `pipeline/tests/ingest/`: pytest tests for stages 1-4.
+- `tools/synthetic/`: synthetic FIRMS files with a planted answer (ING-7). `make synthetic` generates them, runs the pipeline and checks the result against the truth (about 6 s). Output is labelled `data_kind: synthetic`; see its README.
 - `scripts/profile_raw.py`: profiles the raw FIRMS files (columns, codes, date ranges).
 - `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
 - `Dockerfile`, `Makefile`, `README.md`, `docs/`.
@@ -40,6 +41,7 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
 make pipeline        # full India run into out/: about 2 min, peak about 4.6 GB RAM (docs/09)
 make pipeline-test
+make synthetic       # synthetic data with a planted answer: generate, run, check (no real data needed)
 python scripts/profile_raw.py
 python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
 python -m pytest pipeline/tests
@@ -47,7 +49,7 @@ python -m pytest pipeline/tests
 
 Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.
 
-Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | pipeline-test | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
+Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | pipeline-test | synthetic | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
 
 ## Method (do not change without asking)
 

@@ -8,7 +8,7 @@ IMAGE   ?= embertrace:local
 PYTHON  ?= python
 OUT     ?= out
 
-.PHONY: pipeline pipeline-test check-data docker-build docker-run deploy demo-on demo-off url logs
+.PHONY: pipeline pipeline-test synthetic check-data docker-build docker-run deploy demo-on demo-off url logs
 
 # ---- Pipeline (Person 1, ING-9). Full India run: about 2 min, peak about 4.6 GB RAM (docs/09).
 # Writes $(OUT)/ (gitignored). Exporting data/cell_month.parquet + data/meta.json for the app is CAL-4 (Person 2).
@@ -18,6 +18,14 @@ pipeline:
 
 pipeline-test:
 	$(PYTHON) -m pytest pipeline/tests -q
+
+# Synthetic data with a planted answer (ING-7): generate into $(OUT)/synthetic/raw, run the pipeline into
+# $(OUT)/synthetic, then compare with the planted truth. About 20 s, no real data needed.
+synthetic:
+	$(PYTHON) tools/synthetic/generate.py --out $(OUT)/synthetic/raw
+	$(PYTHON) pipeline/run.py --modis "$(OUT)/synthetic/raw/DL_FIRE_M-C61_*/fire_*.csv" \
+	  --viirs "$(OUT)/synthetic/raw/DL_FIRE_*V-C2_*/fire_*.csv" --out $(OUT)/synthetic
+	$(PYTHON) tools/synthetic/check.py $(OUT)/synthetic
 
 
 check-data:

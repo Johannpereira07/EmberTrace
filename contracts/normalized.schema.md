@@ -49,6 +49,7 @@ Dataset-level values, written by `pipeline/run.py` next to `normalized.csv` and 
 
 | Field | Type | Meaning |
 |---|---|---|
+| `data_kind` | string | `real`, or `synthetic` when the input folders carry `SYNTHETIC.txt` (from `tools/synthetic`). Pass it on into `meta.json` |
 | `data_through` | date string | Last day with **VIIRS** data. VIIRS is the source of every month from 2012 on, so this decides whether the latest month is partial. Real data: `2026-11-13` |
 | `provisional_from` | `YYYY-MM` or null | First month with VIIRS near-real-time (NRT) data; that month and every later one are provisional. Real data: `2026-08`. Null, with a warning, if no NRT rows were loaded |
 | `source_series` | string | `VIIRS`: the series the two values above come from |

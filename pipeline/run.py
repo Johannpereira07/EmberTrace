@@ -31,7 +31,7 @@ Outputs (in --out):
   calendar.csv          year x month harmonized counts for the whole AOI
   calendar_anomaly.csv  same, divided by the median of that calendar month
 """
-import argparse, json, os, sys
+import argparse, glob, json, os, sys
 
 import pandas as pd
 
@@ -61,10 +61,19 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
 
+    # Synthetic input (tools/synthetic/generate.py) carries a SYNTHETIC.txt marker next to its files
+    files = sorted(glob.glob(a.modis)) + sorted(glob.glob(a.viirs))
+    synthetic = {os.path.dirname(f) for f in files if os.path.exists(os.path.join(os.path.dirname(f), "SYNTHETIC.txt"))}
+    if synthetic and len(synthetic) != len({os.path.dirname(f) for f in files}):
+        sys.exit("ERROR: some input folders are SYNTHETIC and some are not. Don't mix synthetic and real data.")
+    data_kind = "synthetic" if synthetic else "real"
+    if synthetic:
+        print("*** SYNTHETIC demonstration data (tools/synthetic). Not real fire history. ***")
+
     # ---- ingest: stages 1-4 (Person 1)
     u = pd.concat([load_many(a.modis), load_many(a.viirs)], ignore_index=True)
     print(f"loaded {len(u):,} detections")
-    info = coverage_info(u, a.res)
+    info = {"data_kind": data_kind, **coverage_info(u, a.res)}
     print(f"data_through {info['data_through']}, provisional_from {info['provisional_from']}")
     restrict_to_loaded_data(u)
     u.to_csv(f"{a.out}/unified.csv", index=False)
