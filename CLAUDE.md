@@ -19,15 +19,16 @@ Exists now:
 - `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
 - `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model).
 - `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
+- `pipeline/config.yaml`: satellite dates and series, MODIS confidence thresholds (assumed), default cell size. Read and checked by `pipeline/ingest/satellites.py`; a bad value fails loudly (ING-2).
+- `pipeline/tests/ingest/`: pytest tests for stages 1-4.
 - `scripts/profile_raw.py`: profiles the raw FIRMS files (columns, codes, date ranges).
 - `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
 - `Dockerfile`, `Makefile`, `README.md`, `docs/`.
 
 Planned (docs/03 §2), not created yet:
-- `pipeline/config.yaml` (satellite dates and thresholds, ING-2).
 - `api/`: FastAPI. Contract in `contracts/api/types.ts` + `contracts/fixtures/*.json`.
 - `web/`: React + Vite + TypeScript, react-leaflet + leaflet-draw, D3 scales + SVG charts.
-- `tests/`: no tests exist yet.
+- Tests for `pipeline/model/` (Person 2), `api/` and `web/`.
 
 Deploy: one Docker container (root `Dockerfile`) on **Google Cloud Run**, `asia-south1`. API under `/api`, frontend at `/`, data baked into the image. Backup: frontend in mock mode. See `docs/06-deployment.md`.
 
@@ -39,7 +40,7 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
 python scripts/profile_raw.py
 python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
-pytest   # no tests yet
+python -m pytest pipeline/tests
 ```
 
 Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.

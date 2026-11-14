@@ -36,6 +36,7 @@ if __package__ in (None, ""):   # allow `python pipeline/run.py` as well as `pyt
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pipeline.ingest import aggregate, load_many, restrict_to_loaded_data
+from pipeline.ingest.satellites import CELL_SIZE_DEG
 from pipeline.model import calendar, fit_log_line, harmonize, holdout_check
 
 
@@ -43,7 +44,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--modis", required=True)
     ap.add_argument("--viirs", required=True)
-    ap.add_argument("--res", type=float, default=0.25)
+    ap.add_argument("--res", type=float, default=CELL_SIZE_DEG, help="cell size in degrees (default: config.yaml)")
     ap.add_argument("--out", default="out")
     ap.add_argument("--a2v-window", nargs=2, default=["2012-01", "2019-12"],
                     help="months used to fit Aqua->VIIRS (avoid drifted years)")
