@@ -17,6 +17,7 @@ __pycache__/
 # Node
 node_modules/
 web/dist/
+web/.vite/
 
 # OS / editors
 .DS_Store
