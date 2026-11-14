@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "embertrace/meta.schema.json",
+  "title": "EmberTrace data/meta.json (H2)",
+  "description": "Dataset facts served by GET /api/meta (API spec section 4). Written by pipeline/export.py (CAL-4). Draft by Person 1; Person 2 to confirm (CAL-1).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["data_kind", "pipeline_version", "cell_size_deg", "coverage", "data_through", "provisional_from", "grid_extent"],
+  "properties": {
+    "data_kind": {"enum": ["real", "synthetic"], "description": "synthetic when the input came from tools/synthetic (SYNTHETIC.txt marker)"},
+    "pipeline_version": {"type": "string", "description": "Labels the state of the values, e.g. 0.1-calibration-pending until the stage 5-7 zero-to-positive issue is fixed"},
+    "cell_size_deg": {"type": "number", "exclusiveMinimum": 0},
+    "coverage": {
+      "type": "object", "additionalProperties": false, "required": ["first_month", "last_month"],
+      "properties": {
+        "first_month": {"type": "string", "pattern": "^\\d{4}-\\d{2}$"},
+        "last_month": {"type": "string", "pattern": "^\\d{4}-\\d{2}$"}
+      }
+    },
+    "data_through": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Last day with VIIRS data; decides whether the last month is partial"},
+    "provisional_from": {"type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}$", "description": "First near-real-time month; null if none"},
+    "grid_extent": {
+      "type": "object", "additionalProperties": false, "required": ["min_lat", "max_lat", "min_lon", "max_lon"],
+      "properties": {
+        "min_lat": {"type": "number"}, "max_lat": {"type": "number"},
+        "min_lon": {"type": "number"}, "max_lon": {"type": "number"}
+      },
+      "description": "Outer edges of the cells in cell_month (centres +/- cell_size_deg / 2)"
+    }
+  }
+}
