@@ -1,7 +1,7 @@
 # H1: normalized table (ingest → model)
 
 **Written by:** Person 1 (`pipeline/ingest/`, stages 1 to 4) · **Read by:** Person 2 (`pipeline/model/`, stages 5 to 7)
-**Produced by:** `aggregate()` in `pipeline/ingest/aggregate.py`; `pipeline/run.py` writes it to `<out>/normalized.csv`
+**Produced by:** `aggregate()` in `pipeline/ingest/aggregate.py` (= `filter_detections` → `grid_counts` → `normalize`, ING-5); `pipeline/run.py` writes it to `<out>/normalized.csv`
 **Sample:** `contracts/samples/normalized.central-india.csv`. This is **real FIRMS data** for 20.75–21.75 N, 78.5–79.5 E (16 cells × 312 months, 2000-12 to 2026-11), run with `--res 0.25`.
 
 Changes follow the handoff rule in docs/03 §1: adding an optional column is fine with notice; renaming or removing one needs the whole team.
@@ -56,6 +56,7 @@ Dataset-level values, written by `pipeline/run.py` next to `normalized.csv` and 
 | `cell_size_deg` | number | The `--res` the table was built with |
 | `by_series` | object | Per series (`Terra`, `Aqua`, `VIIRS`; null if absent): `first_day`, `last_day`, `archive_last_day`, `first_nrt_month` |
 | `outage_days` | object | Number of outage days per satellite removed from the observed days (ING-6) |
+| `filter` | object | Per sensor: rows `in`, rows dropped by each filter rule (`unrecognised confidence`, `low confidence`, `not vegetation fire (type != 0)`, `NRT static source`), and rows `kept`. Drops + kept = in (ING-5) |
 | `nrt_static_mask` | object | Mask settings (`cell_deg`, `min_hits`, `dilate`), `squares` per sensor, and `nrt_rows_dropped` (nominal/high NRT rows removed) per sensor (ING-11) |
 
 - Computed from **all** loaded rows, before filtering: a low-confidence detection still shows that the satellite was observing that day.

@@ -1,6 +1,6 @@
 """Stages 2-4: filter, grid + count, normalize by satellites observing.
 
-The three stages are still one function, as in the original harmonize.py (ING-5 splits them).
+One function per stage (ING-5): filter_detections, grid_counts, normalize; aggregate() runs all three.
 Normalization counts observed days: mission days minus outage days (ING-6, pipeline/ingest/outages.py).
 """
 import numpy as np
@@ -52,13 +52,39 @@ def platform_weight(series, month, outage_days=None):
     return w
 
 
-def aggregate(u, res, outage_days=None, exclude=None):
-    """Detections per (series, month, grid cell), divided by satellites observing (minus outage days).
-    `exclude` (boolean Series on u, e.g. NRT rows inside the static-source mask) drops rows before counting."""
-    keep = u["conf_class"].isin(["nominal", "high"]) & (u["type"] == 0)
-    if exclude is not None:
-        keep &= ~exclude
-    u = u[keep].copy()
+FILTER_RULES = ("unrecognised confidence", "low confidence", "not vegetation fire (type != 0)", "NRT static source")
+
+
+def filter_detections(u, exclude=None):
+    """Stage 2: keep nominal/high confidence vegetation fires (type 0; NRT rows default to 0).
+    `exclude` (boolean Series on u, e.g. NRT rows inside the static-source mask) also drops rows.
+    Returns (kept rows, {sensor: {"in": n, <rule>: dropped, "kept": n}}); every rule's drops are printed."""
+    rules = [~u["conf_class"].notna(),
+             u["conf_class"] == "low",
+             u["type"] != 0,
+             exclude if exclude is not None else pd.Series(False, index=u.index)]
+    report, left = {}, pd.Series(True, index=u.index)
+    dropped = []
+    for rule in rules:
+        hit = left & rule.fillna(False).astype(bool)
+        dropped.append(hit)
+        left &= ~hit
+    for sensor in sorted(u["sensor"].dropna().unique()):
+        s = u["sensor"] == sensor
+        report[sensor] = {"in": int(s.sum()),
+                          **{name: int((d & s).sum()) for name, d in zip(FILTER_RULES, dropped)},
+                          "kept": int((left & s).sum())}
+        r = report[sensor]
+        print(f"  filter {sensor}: {r['in']:,} rows; dropped "
+              + ", ".join(f"{name} {r[name]:,}" for name in FILTER_RULES) + f"; kept {r['kept']:,}")
+    return u[left].copy(), report
+
+
+def grid_counts(u, res):
+    """Stage 3: detections and FRP per (series, month, grid cell). Every cell that has a detection
+    gets a row for EVERY month in the range: months without fires are filled with 0 (never dropped).
+    Returns ({series: DataFrame indexed (month, i) with count, frp_sum}, cells with index i, months)."""
+    u = u.copy()
     u["series"] = np.where(u["sensor"] == "MODIS", u["platform"],
                            np.where(u["sensor"] == "VIIRS", "VIIRS", None))
     unassigned = ~u["series"].isin(list(SERIES))
@@ -74,10 +100,18 @@ def aggregate(u, res, outage_days=None, exclude=None):
     cells = g[["cell_lat", "cell_lon"]].drop_duplicates().reset_index(drop=True)
     cells["i"] = range(len(cells))
     full = pd.MultiIndex.from_product([months, cells["i"]], names=["month", "i"])
-    out = None
+    counts = {}
     for s in SERIES:
         gs = g[g["series"] == s].merge(cells, on=["cell_lat", "cell_lon"])
-        gs = gs.set_index(["month", "i"])[["count", "frp_sum"]].reindex(full, fill_value=0)
+        counts[s] = gs.set_index(["month", "i"])[["count", "frp_sum"]].reindex(full, fill_value=0)
+    return counts, cells, months
+
+
+def normalize(counts, cells, months, outage_days=None):
+    """Stage 4: divide by the satellites observing each month (minus outage days): NaN when none was."""
+    out = None
+    for s, gs in counts.items():
+        gs = gs.copy()
         w = pd.Series({m: platform_weight(s, m, outage_days) for m in months})
         wv = gs.index.get_level_values("month").map(w).values
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -86,3 +120,11 @@ def aggregate(u, res, outage_days=None, exclude=None):
         gs.columns = [f"{s.lower()}_{c}" for c in gs.columns]
         out = gs if out is None else out.join(gs)
     return out.reset_index().merge(cells, on="i").drop(columns="i")
+
+
+def aggregate(u, res, outage_days=None, exclude=None, report=None):
+    """Stages 2-4 in one call: filter, grid + count, normalize. `report` (a dict) receives the filter counts."""
+    kept, rep = filter_detections(u, exclude)
+    if report is not None:
+        report.update(rep)
+    return normalize(*grid_counts(kept, res), outage_days)

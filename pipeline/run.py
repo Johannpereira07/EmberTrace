@@ -96,7 +96,9 @@ def main():
           f"({int(counted.sum()):,} nominal/high): " + ", ".join(f"{s} {m}: {n:,}" for (s, m), n in by.items()))
     info["nrt_static_mask"] = {**NRT_MASK, "squares": mask_summary(mask),
                                "nrt_rows_dropped": {s: int(n) for s, n in u[counted].groupby("sensor").size().items()}}
-    cm = aggregate(u, a.res, outage_days_by_month(outages), exclude=nrt_static)
+    filter_report = {}
+    cm = aggregate(u, a.res, outage_days_by_month(outages), exclude=nrt_static, report=filter_report)
+    info["filter"] = filter_report
     cm.to_csv(f"{a.out}/normalized.csv", index=False)   # handoff H1
     json.dump(info, open(f"{a.out}/normalized.meta.json", "w"), indent=2)
 
