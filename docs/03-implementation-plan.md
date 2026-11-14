@@ -232,8 +232,8 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | ID | Block | Task | Done when |
 |---|---|---|---|
 | CAL-1 | A | Write H2 schemas; commit a sample `cell_month.parquet` + `meta.json` | Person 3 can load them |
-| CAL-2 | B | Calibrate: Aqua to VIIRS on 2012 to 2019, Terra to Aqua on Aug 2002 to Dec 2011, bias factor, 70/30 hold-out, fit guard | Planted synthetic relationship recovered; one-day sample refused |
-| CAL-3 | B | Harmonize: source per month (VIIRS from 2012, calibrated Aqua Jul 2002 to Dec 2011, chained Terra before); never blend after 2012 | Unit tests per period |
+| CAL-2 | B | Calibrate: Aqua to VIIRS on 2012 to 2019, Terra to Aqua on Aug 2002 to Dec 2011, bias factor, 70/30 hold-out, fit guard. **⚠️ The conversions must keep 0 detections at 0.** Today `apply_log_line(0) > 0` (positive intercept): in the central India sample a cell with 0 detections becomes 4.4 (Aqua) or 14.2 (chained Terra). See CLAUDE.md, Known issues | Planted synthetic relationship recovered; one-day sample refused; **a cell with 0 detections converts to 0** |
+| CAL-3 | B | Harmonize: source per month (VIIRS from 2012, calibrated Aqua Jul 2002 to Dec 2011, chained Terra before); never blend after 2012. A month with 0 detections must stay `zero` before 2012 too (see CAL-2) | Unit tests per period, including a 0-detection cell in each period |
 | CAL-4 | B | Export: `cell_month.parquet` (with raw counts per series for the low-count flag), `calibration.json`, `meta.json`. H2 must state that raw counts are 0 even when a satellite wasn't flying, so NaN vs 0 comes from the harmonized value / `source`, never from a raw count (see H1) | Matches H2 exactly |
 | CAL-5 | B | `science/splice_check.py`: pass/fail at **2002-07, 2012-01 and 2023-03** (NOAA-21 joins); added to `make test` | Runs on every pipeline change |
 | CAL-6 | B | Cell size check: 0.25° vs 0.5° on synthetic data; post the result | Decision confirmed or changed via `meta.json` |
