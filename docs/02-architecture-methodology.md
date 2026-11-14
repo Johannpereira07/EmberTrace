@@ -6,7 +6,7 @@ NASA Space Apps 2026, Challenge 15: Harmonization of MODIS and VIIRS Hot Spots. 
 >
 > - **NOAA-21 start:** **1 Mar 2023** is confirmed by the real archive data (`docs/07-data-profile.md`). Splice checks also run at **2023-03**.
 > - **S-NPP end:** 2 Nov 2026 **13:00 UTC**. Terra/Aqua end dates are not hard-coded.
-> - **MODIS confidence thresholds 30 / 80:** verified (sections 6.2, 10 still say "from memory").
+> - **MODIS confidence thresholds 30 / 80:** still **assumed**, not verified. The team keeps them and labels them as assumed.
 > - **Outputs:** the app serves `cell_month.parquet` plus `meta.json` (with `cell_size_deg`, `provisional_from`, `data_through`), not `cell_month.csv` (sections 4, 8).
 > - **Code layout:** `harmonize.py` is split into `pipeline/ingest/` (stages 1 to 4) and `pipeline/model/` (stages 5 to 7).
 > - **Open questions in section 11:** settled in the Implementation Plan section 4 (0.25° cells, full-record baseline, FRP cut, one fit per satellite pair, single-container hosting).

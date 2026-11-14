@@ -47,7 +47,7 @@ Make targets: `make pipeline | api | web | web-live | test | contract-test | fix
 ## Method (do not change without asking)
 
 1. Three series: Terra, Aqua, VIIRS (S-NPP + NOAA-20 + NOAA-21 combined).
-2. Filter: drop confidence `low`; for archive files keep `type == 0` (vegetation fire).
+2. Filter: drop confidence `low`; for archive files keep `type == 0` (vegetation fire). NRT files have no `type`: drop NRT detections inside the static-source mask built from archive type 1/2/3 locations (docs/03, ING-11 method note).
 3. Grid 0.25°, count per cell per month. Missing (cell, month) = 0 only if a satellite was observing; NaN if not.
 4. Normalize: divide counts by the number of satellites observing that month (fractional for partial months).
 5. Conversions (log1p-log1p line + bias factor; needs >= 30 rows and >= 12 months):
@@ -78,12 +78,12 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 
 - Data: India, 0 km buffer, `data/raw/DL_FIRE_*`, each with `fire_archive_*.csv` (standard ML) and `fire_nrt_*.csv`. About 17.9M archive rows. Gitignored.
 - Sensor comes from the SATELLITE name (Terra, Aqua = MODIS; SNPP, N20, N21 = VIIRS). VIIRS files use MODIS-style column names.
-- Confidence: MODIS numeric 0-100 (class cut-offs unverified; test empirically); VIIRS l/n/h.
-- `type`: 0 vegetation fire, 1 volcano, 2 other static land source, 3 offshore. Archive only. NRT has no `type`, so NRT months are overcounted (about 5% MODIS, 12-14% VIIRS).
+- Confidence: MODIS numeric 0-100, class cut-offs 30/80 **assumed** (not verified; label them as assumed); VIIRS l/n/h.
+- `type`: 0 vegetation fire, 1 volcano, 2 other static land source, 3 offshore. Archive only. NRT has no `type`, so unfiltered NRT months are overcounted (about 5% MODIS, 12-14% VIIRS). The static-source mask (ING-11) reduces this; its residual error must be measured and reported.
 - Archive and NRT do not overlap. `provisional_from` = 2026-08 (first VIIRS NRT month).
 - NOAA-21 starts 2023-03-01 (data), S-NPP ends 2026-11-02.
 - MODIS `version` 6.03 (2000-2022), 61.03 (2023+). Calibration windows lie in 6.03.
-- Known MODIS outage days (Readme/FAQ, not complete): 2001-04-15, 2001-06-15..07-03, 2002-03-19..28, "some data" in 2002, from mid-Aug 2007, part of 2009-04-21 and all of 2009-04-22. Official list: FIRMS missing-data table. Handle with observed-days per satellite per month; never read an outage as zero fires.
+- Outage days: `docs/08-missing-data-table.md` (FIRMS list) checked against our raw files. See its last section: the list is incomplete for our region, and one row is a copy error. Rule: a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Observed days = mission days minus outage days. `scripts/check_outages.py` derives them. Never read an outage as zero fires; partial days count as observed (known limitation). The Readme/FAQ dates 2001-04-15, mid-Aug 2007 and 2009-04-21/22 are **not** full outages over India (detections present); 2002-03 is 03-20..03-28; 2001-06 is 06-15..07-03.
 - NRT day/night flag uses orbit direction, standard uses solar zenith angle.
 
 ## Decisions (proposed by the team, not all confirmed)
@@ -93,7 +93,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - Pipeline writes `provisional_from` (first NRT month) into `meta.json`.
 - Low-count and minimum-years thresholds are config values with placeholder defaults, labelled provisional.
 - Partial current month is labelled partial; its anomaly is "not comparable".
-- Raw detections download: capped export, Should-have. FRP: out of scope (no validated cross-sensor conversion).
+- Raw detections download: Could Have (PRD 5.7). The endpoint returns 501 in the MVP; build a capped export only if every Must and Should is done by Block D. FRP: out of scope (no validated cross-sensor conversion).
 - Polygon selection is a Should; a lat/lon box is a Must.
 
 ## Known issues (to do)
@@ -101,6 +101,8 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - Anomaly with a zero calendar-month median is not yet handled in code: must return `not_defined` (blank + flag), not inf/NaN.
 - `aggregate` builds the full month × cell grid per series: memory risk on large regions.
 - No de-duplication when overlapping downloads contain the same detection.
+- NRT static-source mask (ING-11) not built yet.
+- Outage days not used yet: normalization counts mission dates only (ING-6, input now in docs/08).
 - No `meta.json` yet (cell size, provisional_from, windows, baseline years).
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`); tiny areas can make a satellite's first/last months look unobserved.

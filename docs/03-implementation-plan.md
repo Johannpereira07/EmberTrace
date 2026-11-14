@@ -45,7 +45,7 @@ flowchart TD
 
 | Layer | Owner | What they deliver | Starts from (no waiting) |
 |---|---|---|---|
-| **Pipeline, stages 1 to 4**: clean, filter, grid, normalize | **Person 1** | A per-cell, per-month, per-satellite table with NaN and 0 kept separate | The existing `harmonize.py` + synthetic data + the two sample files |
+| **Pipeline, stages 1 to 4**: clean, filter, grid, normalize | **Person 1** | A per-cell, per-month, per-satellite table with NaN and 0 kept separate | The existing `pipeline/harmonize.py` + the real FIRMS archive in `data/raw/` (see `docs/07-data-profile.md`) + synthetic data |
 | **Pipeline, stages 5 to 7 + precomputed data**: calibrate, harmonize, calendar, export | **Person 2** | `cell_month.parquet`, `calibration.json`, `meta.json`, and the automated "no jump" check | A small sample of Person 1's table (generated in the first hour from today's code) |
 | **Backend API** | **Person 3** | `GET /api/meta`, `POST /api/calendar`, `POST /api/download/monthly.csv`, deployment | A sample `cell_month.parquet` from Person 2 (first hour) and the API spec |
 | **Frontend: app, map, controls, data quality** | **Person 4** | Map selection, date range, API connection, warnings panel, CSV button, explainer | Mock API responses (already in the API spec) |
@@ -70,9 +70,9 @@ Each person writes only in their own folders. That alone removes almost all merg
 
 | Person | Title | Owns (only they write here) |
 |---|---|---|
-| **Person 1** | Ingest Engineer | `pipeline/ingest/`, `pipeline/config.yaml`, `pipeline/tests/ingest/`, `contracts/normalized.schema.md`, `tools/synthetic/` |
+| **Person 1** | Ingest Engineer | `pipeline/ingest/`, `pipeline/config.yaml`, `pipeline/requirements.txt`, `pipeline/harmonize.py` (until split), `pipeline/tests/ingest/`, `scripts/`, `contracts/normalized.schema.md`, `tools/synthetic/` |
 | **Person 2** | Calibration & Data Engineer | `pipeline/model/`, `pipeline/tests/model/`, `data/`, `science/`, `contracts/cell_month.schema.md`, `contracts/meta.schema.json` |
-| **Person 3** | Backend Engineer | `api/`, `contracts/api/`, `contracts/fixtures/`, `deploy/`, `Makefile` |
+| **Person 3** | Backend Engineer | `api/`, `contracts/api/`, `contracts/fixtures/`, `Dockerfile`, `.dockerignore`, `.gcloudignore`, `Makefile`, `docs/06-deployment.md` |
 | **Person 4** | Frontend Engineer: App & Map | `web/` setup files, `web/src/app/`, `web/src/api/`, `web/src/features/map/`, `web/src/features/controls/`, `web/src/features/quality/`, `web/src/features/explainer/`, `web/src/features/downloads/` |
 | **Person 5** | Frontend Engineer: Charts | `web/src/features/charts/`, `web/src/features/insights/`, `web/src/styles/scales.ts`, `web/src/dev/ChartPlayground.tsx` |
 | Everyone | | `TASKS.md` (tick your own lines), `docs/submission/` (your own section) |
@@ -80,7 +80,8 @@ Each person writes only in their own folders. That alone removes almost all merg
 ```text
 embertrace/
 ├── TASKS.md                       everyone (own lines only)
-├── Makefile                       Person 3
+├── Makefile                       Person 3 (deploy targets exist)
+├── Dockerfile  .dockerignore  .gcloudignore   Person 3 (Cloud Run, docs/06)
 ├── contracts/
 │   ├── normalized.schema.md       Person 1
 │   ├── cell_month.schema.md       Person 2
@@ -88,25 +89,27 @@ embertrace/
 │   ├── api/types.ts               Person 3
 │   └── fixtures/*.json            Person 3
 ├── pipeline/
+│   ├── harmonize.py               Person 1 (current single-file pipeline, split in ING-1)
+│   ├── requirements.txt           Person 1
 │   ├── config.yaml                Person 1
 │   ├── ingest/  (stages 1-4)      Person 1
 │   ├── model/   (stages 5-7)      Person 2
 │   └── run.py                     Person 1 (calls ingest, then model)
+├── scripts/profile_raw.py         Person 1 (raw data profile -> docs/07)
 ├── tools/synthetic/               Person 1
-├── data/                          Person 2 (build outputs; real archive gitignored)
+├── data/                          Person 2 (build outputs; real archive in data/raw/, gitignored)
 ├── science/                       Person 2
 ├── api/                           Person 3
-├── deploy/                        Person 3
 ├── web/
 │   └── src/
 │       ├── app/  api/             Person 4
 │       ├── features/map/ controls/ quality/ explainer/ downloads/   Person 4
 │       ├── features/charts/ insights/                               Person 5
 │       └── styles/scales.ts  dev/ChartPlayground.tsx                Person 5
-└── docs/submission/               everyone
+└── docs/                          shared; docs/submission/ everyone
 ```
 
-**Tech stack** (confirm at kickoff): Python + pandas + pyarrow for the pipeline; FastAPI for the API; React + Vite + TypeScript, react-leaflet + leaflet-draw for the map, D3 scales + SVG for the charts; one Docker container serves the API and the built frontend.
+**Tech stack** (confirm at kickoff): Python + pandas + pyarrow for the pipeline; FastAPI for the API; React + Vite + TypeScript, react-leaflet + leaflet-draw for the map, D3 scales + SVG for the charts; one Docker container on Google Cloud Run (`asia-south1`) serves the API under `/api` and the built frontend at `/` (see `docs/06-deployment.md`).
 
 ---
 
@@ -159,8 +162,8 @@ gantt
 |---|---|---|
 | 09:00 to 09:20 | All | Walk through this plan and the architecture diagram. Confirm the deadline time zone |
 | 09:20 to 09:45 | All | Close the open decisions (table below). One person types them into `docs/DECISIONS.md` |
-| 09:45 to 10:30 | Person 3 | Create repo, folders, `Makefile`, `TASKS.md`, `.gitignore` (data, `.env`, credentials) |
-| 09:45 to 10:30 | Person 1 | Split `harmonize.py` into `pipeline/ingest/` (stages 1 to 4) and `pipeline/model/` (stages 5 to 7) with **no behavior change**; existing tests must still pass. Commit H1 and a sample normalized table |
+| 09:45 to 10:30 | Person 3 | Create folders and `TASKS.md`; extend `Makefile` (`.gitignore`, `Dockerfile` and the deploy targets already exist) |
+| 09:45 to 10:30 | Person 1 | Split `pipeline/harmonize.py` into `pipeline/ingest/` (stages 1 to 4) and `pipeline/model/` (stages 5 to 7) with **no behavior change** (no tests exist yet: compare the output files of both versions on the same input). Commit H1 and a sample normalized table |
 | 09:45 to 10:30 | Person 2 | Write H2 (`cell_month` schema + `meta.json`) and commit a **sample `cell_month.parquet`** built from today's code |
 | 09:45 to 10:30 | Person 3 | Write H3: `types.ts` and full-length mock responses (313 months) from the API spec examples |
 | 09:45 to 10:30 | Persons 4 & 5 | Agree H4 (chart component props). Person 4 sets up the React app; Person 5 creates the chart playground page that loads the mock files |
@@ -178,7 +181,7 @@ gantt
 | FRP (fire radiative power) | **Cut**: no conversion between sensors exists for it |
 | Partial current month | **Labeled partial**; its anomaly is shown as not comparable |
 | Calibration scope | **One fit per satellite pair** for the whole region, never per selected area |
-| Hosting | **One container** (API + built frontend). Backup: frontend in mock mode on GitHub Pages |
+| Hosting | **One container on Google Cloud Run** (`asia-south1`): API under `/api`, built frontend at `/`, data baked into the image (`docs/06-deployment.md`). Backup: frontend in mock mode on GitHub Pages |
 
 ### Corrections from the verified constants (apply in setup)
 
@@ -187,8 +190,8 @@ gantt
 | NOAA-21 start | ~~Change config to 17 Jan 2024~~ **Superseded:** keep **1 Mar 2023**. The real archive file (`J2V-C2`) has detections from 2023-03-01 (about 448k in 2023), see `docs/07-data-profile.md` | Person 1 |
 | S-NPP end | **2 Nov 2026 13:00 UTC** in config | Person 1 |
 | Terra and Aqua end dates | **Do not hard-code**; sources conflict | Person 1 |
-| MODIS confidence thresholds 30 / 80 | Verified; keep | Person 1 |
-| VIIRS archive letters `l/n/h` and `type` column | Still unverified; check on the first real file | Person 1 |
+| MODIS confidence thresholds 30 / 80 | **Assumed**, not verified against the FIRMS user guide. Keep them, and label them "assumed" in docs, config and the submission | Person 1 |
+| VIIRS archive letters `l/n/h` and `type` column | **Verified** on the real files (`docs/07-data-profile.md`): VIIRS confidence is `l/n/h` in archive and NRT; archive files have `type`, NRT files do not | Person 1 |
 | ~~PRD text that still says NOAA-21 from 2023~~ | Not needed: the PRD date is correct (it can drop the [Unverified] label) | Person 2 |
 
 ---
@@ -203,17 +206,25 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 
 | ID | Block | Task | Done when |
 |---|---|---|---|
-| ING-1 | A | Split `harmonize.py` into `ingest/` and `model/`; write H1 | Old tests pass unchanged |
+| ING-1 | A | Split `pipeline/harmonize.py` into `ingest/` and `model/`; write H1 | Split version writes identical output files to `pipeline/harmonize.py` on the same input (no tests exist yet) |
 | ING-2 | A | Apply the config corrections (NOAA-21, S-NPP end, no hard-coded Terra/Aqua end) | Test shows no step at 2023-03 (NOAA-21 joins) |
-| ING-3 | B | Loader: NRT text format and archive CSV format; sensor detected from columns | Both sample files and hand-made archive files load |
-| ING-4 | B | `first_file_check.py`: reports VIIRS confidence letters and whether a `type` column exists | Ready to run on the first real file |
+| ING-3 | B | Loader: NRT text format and archive CSV format; **sensor detected from the satellite name** (real VIIRS files use MODIS-style column names) | All 8 files in `data/raw/` and the two sample files load |
+| ING-4 | B | ~~`first_file_check.py`~~ **Done:** `scripts/profile_raw.py` writes `docs/07-data-profile.md` (40 PASS, 0 FAIL on the real files) | Rerun whenever the raw data changes |
 | ING-5 | B | Filter (drop low confidence, keep type 0 where present) and grid at the configured cell size; **empty cells filled with 0** | Unit tests for both |
-| ING-6 | B | Normalize by satellites flying, fractional weights for partial months; **NaN when no satellite flies** | Unit tests: Terra before Nov 2000 gives NaN; quiet cell gives 0 |
+| ING-6 | B | Normalize by satellites flying, fractional weights for partial months; **NaN when no satellite flies**. Count **observed days** per satellite per month = mission days minus outage days. Rule: a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. `scripts/check_outages.py --csv` produces the list from `docs/08-missing-data-table.md` and the raw files; the "clearly non-zero" cut-off is a config placeholder, labeled provisional. An outage must never read as zero fires | Unit tests: Terra before Nov 2000 gives NaN; quiet cell gives 0; an outage day lowers the weight |
 | ING-7 | B | **Synthetic demo generator** over 5 to 40 N, 60 to 100 E with: one bad fire season, one sparse area, a zero-median month, the current partial month, both handovers | Person 2 can run the full pipeline on it |
 | ING-8 | B | `data_through` and `provisional_from` computed from the input (NRT months flagged) and passed in H1 | Values appear in the normalized output |
+| ING-11 | B | **NRT static-source mask** (see the method note below the table) | Mask applied to NRT; residual error measured on the last archive months and posted |
 | ING-9 | C | `make pipeline` runs ingest + model end to end in one command; performance check on the full grid | One command rebuilds all data |
-| ING-10 | D | **If the real archive arrives:** run ING-4, then ingest a small region | Real normalized table for Person 2, or a note saying why not |
+| ING-10 | D | **Real archive is in `data/raw/`** (India, 2000-11 to 2026-11-13): ingest a small region first, then the full region | Real normalized table for Person 2, or a note saying why not |
 | **Submission** | F | README: what EmberTrace is, how to run it, data credits (NASA FIRMS links) | README reviewed by one teammate |
+
+**Method note: NRT static-source mask (ING-11).** Archive files tag every detection with `type` (0 = vegetation fire, 1 = volcano, 2 = other static land source such as industry, 3 = offshore). NRT files have no `type`, so the type 0 filter can't run on them. Static sources stay in the same place over the years, though, so the archive tells us where they are:
+
+1. **Build the mask** from the archive: every location (rounded to `nrt_mask.cell_deg`) with at least `nrt_mask.min_hits` detections of type 1, 2 or 3, kept separately for MODIS and VIIRS. Both settings are config values with placeholder defaults (`0.01°` ≈ 1 km, `1`), labeled provisional.
+2. **Apply it to NRT**: drop NRT detections inside the mask, then filter on confidence as usual.
+3. **Validate on archive data**: take the last 3 archive months, ignore their `type`, apply the mask, and compare with the true type 0 counts. Post the residual error per sensor, tune the two settings if needed, and report the result as a limitation.
+4. **Never silent**: log how many NRT rows the mask dropped per sensor and month. NRT months stay labeled provisional in any case.
 
 ### Person 2: Calibration & Data Engineer (stages 5 to 7 + precomputed data)
 
@@ -229,7 +240,7 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | CAL-6 | B | Cell size check: 0.25° vs 0.5° on synthetic data; post the result | Decision confirmed or changed via `meta.json` |
 | CAL-7 | C | **Hero figure:** raw MODIS + VIIRS counts (visible jump at 2012) next to the harmonized series (no jump), labeled synthetic | PNG in `science/figures/` |
 | CAL-8 | C | Real-data runbook + scripts: overlap plot 2012 to 2019, drift check 2020 onward, hold-out errors, known bad season check | Ready to run in one command |
-| CAL-9 | D | **If real data arrives:** run the runbook; at 12:00 decide go or no-go (rule in section 7) | Result posted, weak results reported honestly |
+| CAL-9 | D | **Run the runbook on the real data** (in `data/raw/`); at 12:00 decide go or no-go (rule in section 7) | Result posted, weak results reported honestly |
 | CAL-10 | D | Plain-language harmonization facts for the in-app explainer (sent to Person 4) | Text in `docs/explainer.md` |
 | **Submission** | F | Two slides: "How harmonization works" and "Limitations"; answers science questions at the Showcase | Slides in the shared deck |
 
@@ -247,7 +258,7 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | API-6 | B | Flags and warnings: `source`, `provisional`, `partial`, `low_count`; the six warning codes with month ranges | Matches spec section 5.5 |
 | API-7 | C | `POST /api/download/monthly.csv` (comment header, unavailable = empty, never 0); `/api/download/detections.csv` returns 501 | CSV rows equal the calendar response |
 | API-8 | C | Contract tests (all 11 cases in spec section 10) + `make fixtures` regenerates the mock files from the live API | `make contract-test` green |
-| API-9 | C | **Deploy** the container (API + built frontend), CORS, health check; public test URL by 02:30 | URL shared in channel |
+| API-9 | C | **Deploy** to Cloud Run with `make deploy` (`docs/06-deployment.md`): API + built frontend on one origin (no CORS needed), `GET /api/health`; public test URL by 02:30 | URL shared in channel |
 | API-10 | D | Polygon areas (cell center inside polygon), only if all Must Haves are live | Tested with one polygon |
 | **Submission** | F | Submission page: fill every field, add the live app and repo links, test all links logged out; press Submit at 21:00 | Confirmation screenshot posted |
 
@@ -333,7 +344,7 @@ From Sunday 06:30, each person tests another person's layer against the PRD chec
 
 ### Quick commands
 ```bash
-make pipeline        # build synthetic data (ingest + model)
+make pipeline        # build the data (ingest + model), synthetic or real
 make api             # run the API locally
 make web             # run the frontend on mock data
 make web-live        # run the frontend against the local API
@@ -348,9 +359,9 @@ make fixtures        # regenerate mock files from the live API
 
 | Risk | What we do | Who decides |
 |---|---|---|
-| Real FIRMS archive never arrives | Ship on synthetic data, labeled "Demonstration data" everywhere. Show the real-data runbook as ready to run | Person 2 |
-| Real data arrives but shows a jump | **At 12:00 Sunday:** use real data only if there is no step at 2002-07 and 2012-01. Otherwise demo synthetic and present the real results as a limitation | Person 2 |
-| VIIRS archive has no `type` column | VIIRS would keep non-vegetation hotspots while MODIS drops them. Note it as a limitation; measure the effect if time allows | Persons 1 and 2 |
+| ~~Real FIRMS archive never arrives~~ | **Resolved:** the archive arrived on 14 Nov (`data/raw/`, `docs/07-data-profile.md`). Synthetic data, labeled "Demonstration data" everywhere, stays the fallback if the real run fails or fails the 12:00 check | Person 2 |
+| Real data arrives but shows a jump | **At 12:00 Sunday:** use real data only if there is no step at 2002-07, 2012-01 and 2023-03 (NOAA-21 joins; same check as CAL-5). Otherwise demo synthetic and present the real results as a limitation | Person 2 |
+| NRT files have no `type` column | Without a filter, provisional months are overcounted by about 5% (MODIS) and 12 to 14% (VIIRS), which inflates the current month's anomaly. Apply the static-source mask (ING-11), keep months labeled provisional, and report the measured residual as a limitation | Persons 1 and 2 |
 | API host is down during the demo | Frontend in mock mode on GitHub Pages as backup | Person 3 |
 | Someone falls behind | At the 02:30 stand-up, move one task to whoever is ahead; the folder moves with it | Team |
 | New ideas late in the build | No new features after 12:00 Sunday. Ideas go into "Future work" in the README | Team |
