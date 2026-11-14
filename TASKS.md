@@ -3,18 +3,18 @@
 Task IDs and "done when" are in `docs/03-implementation-plan.md` §5. Tick **your own lines only**; file bugs under the owner's name.
 
 ## Person 1: Ingest (stages 1-4)
-- [ ] ING-1 split `harmonize.py` into `ingest/` + `model/`; H1
-- [ ] ING-2 config corrections → `pipeline/config.yaml`
-- [ ] ING-3 loader, both formats
-- [ ] ING-4 `scripts/profile_raw.py` → docs/07
-- [ ] ING-5 filter + grid, unit tests
-- [ ] ING-6 normalize with observed days (outages)
-- [ ] ING-7 synthetic demo generator
-- [ ] ING-8 `data_through`, `provisional_from` in H1
-- [ ] ING-11 NRT static-source mask
-- [ ] ING-9 `make pipeline`
-- [ ] ING-10 real archive, small region then full
-- [ ] Submission: README
+- [x] ING-1 split `harmonize.py` into `ingest/` + `model/`; H1 (byte-identical outputs)
+- [x] ING-2 config corrections → `pipeline/config.yaml` (`test_no_step_when_noaa21_joins`)
+- [x] ING-3 loader, both formats (all 8 files in `data/raw/` load, docs/09; the two one-day sample files are no longer in the repo)
+- [x] ING-4 `scripts/profile_raw.py` → docs/07
+- [x] ING-5 filter + grid, unit tests
+- [x] ING-6 normalize with observed days (outages)
+- [x] ING-7 synthetic demo generator (`make synthetic`)
+- [x] ING-8 `data_through`, `provisional_from` in H1
+- [x] ING-11 NRT static-source mask (±4%, docs/10)
+- [x] ING-9 `make pipeline` (about 2 min, 4.6 GB, docs/09)
+- [x] ING-10 real archive, small region then full (docs/09)
+- [ ] Submission: README (drafted; needs app run steps now `api/` + `web/` exist, and a teammate review)
 
 ## Person 2: Calibration & data (stages 5-7)
 - [ ] CAL-1 H2 schemas + sample `cell_month.parquet` + `meta.json`
