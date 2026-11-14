@@ -5,8 +5,20 @@ PROJECT ?= embertrace-nasa26
 REGION  ?= asia-south1
 SERVICE ?= embertrace
 IMAGE   ?= embertrace:local
+PYTHON  ?= python
+OUT     ?= out
 
-.PHONY: check-data docker-build docker-run deploy demo-on demo-off url logs
+.PHONY: pipeline pipeline-test check-data docker-build docker-run deploy demo-on demo-off url logs
+
+# ---- Pipeline (Person 1, ING-9). Full India run: about 2 min, peak about 4.6 GB RAM (docs/09).
+# Writes $(OUT)/ (gitignored). Exporting data/cell_month.parquet + data/meta.json for the app is CAL-4 (Person 2).
+pipeline:
+	$(PYTHON) pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" \
+	  --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --out $(OUT)
+
+pipeline-test:
+	$(PYTHON) -m pytest pipeline/tests -q
+
 
 check-data:
 	@test -f data/cell_month.parquet || (echo "data/cell_month.parquet missing: run 'make pipeline' first" && exit 1)

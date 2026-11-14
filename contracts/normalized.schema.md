@@ -31,7 +31,7 @@ One row per **(month, grid cell)**. Every cell that has at least one detection a
 
 ## Outage days (ING-6)
 
-Observed days = mission days minus outage days (rule in `docs/08`, code in `pipeline/ingest/outages.py`). `pipeline/run.py` derives them from the loaded data and writes `<out>/outages.csv` (`platform, date, reason, neighbour_median`). The sidecar also carries `outage_days` (count per satellite). India-wide: 158 days (Terra 69, S-NPP 50, Aqua 31, NOAA-20 6, NOAA-21 2).
+Observed days = mission days minus outage days (rule in `docs/08`, code in `pipeline/ingest/outages.py`). `pipeline/run.py` derives them from the loaded data and writes `<out>/outages.csv` (`platform, date, reason, neighbour_median`). The sidecar also carries `outage_days` (count per satellite). India-wide (full run, `docs/09`): 159 days (Terra 69, S-NPP 51, Aqua 31, NOAA-20 6, NOAA-21 2).
 
 The rule needs region-wide daily counts. On a **small spatial subset**, pass the India-wide list instead: `pipeline/run.py --outages <list>`, made with `scripts/check_outages.py --csv`. A copy is at `contracts/samples/outages.india.csv`.
 
