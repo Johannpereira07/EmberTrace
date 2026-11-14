@@ -45,7 +45,7 @@ flowchart TD
 
 | Layer | Owner | What they deliver | Starts from (no waiting) |
 |---|---|---|---|
-| **Pipeline, stages 1 to 4**: clean, filter, grid, normalize | **Person 1** | A per-cell, per-month, per-satellite table with NaN and 0 kept separate | The existing `pipeline/harmonize.py` + the real FIRMS archive in `data/raw/` (see `docs/07-data-profile.md`) + synthetic data |
+| **Pipeline, stages 1 to 4**: clean, filter, grid, normalize | **Person 1** | A per-cell, per-month, per-satellite table with NaN and 0 kept separate | The pipeline code (`pipeline/run.py` + `pipeline/ingest/`, split from `harmonize.py` in ING-1) + the real FIRMS archive in `data/raw/` (see `docs/07-data-profile.md`) + synthetic data |
 | **Pipeline, stages 5 to 7 + precomputed data**: calibrate, harmonize, calendar, export | **Person 2** | `cell_month.parquet`, `calibration.json`, `meta.json`, and the automated "no jump" check | A small sample of Person 1's table (generated in the first hour from today's code) |
 | **Backend API** | **Person 3** | `GET /api/meta`, `POST /api/calendar`, `POST /api/download/monthly.csv`, deployment | A sample `cell_month.parquet` from Person 2 (first hour) and the API spec |
 | **Frontend: app, map, controls, data quality** | **Person 4** | Map selection, date range, API connection, warnings panel, CSV button, explainer | Mock API responses (already in the API spec) |
@@ -70,7 +70,7 @@ Each person writes only in their own folders. That alone removes almost all merg
 
 | Person | Title | Owns (only they write here) |
 |---|---|---|
-| **Person 1** | Ingest Engineer | `pipeline/ingest/`, `pipeline/config.yaml`, `pipeline/requirements.txt`, `pipeline/harmonize.py` (until split), `pipeline/tests/ingest/`, `scripts/`, `contracts/normalized.schema.md`, `tools/synthetic/` |
+| **Person 1** | Ingest Engineer | `pipeline/ingest/`, `pipeline/config.yaml`, `pipeline/requirements.txt`, `pipeline/run.py`, `pipeline/tests/ingest/`, `scripts/`, `contracts/normalized.schema.md`, `tools/synthetic/` |
 | **Person 2** | Calibration & Data Engineer | `pipeline/model/`, `pipeline/tests/model/`, `data/`, `science/`, `contracts/cell_month.schema.md`, `contracts/meta.schema.json` |
 | **Person 3** | Backend Engineer | `api/`, `contracts/api/`, `contracts/fixtures/`, `Dockerfile`, `.dockerignore`, `.gcloudignore`, `Makefile`, `docs/06-deployment.md` |
 | **Person 4** | Frontend Engineer: App & Map | `web/` setup files, `web/src/app/`, `web/src/api/`, `web/src/features/map/`, `web/src/features/controls/`, `web/src/features/quality/`, `web/src/features/explainer/`, `web/src/features/downloads/` |
@@ -89,7 +89,6 @@ embertrace/
 │   ├── api/types.ts               Person 3
 │   └── fixtures/*.json            Person 3
 ├── pipeline/
-│   ├── harmonize.py               Person 1 (current single-file pipeline, split in ING-1)
 │   ├── requirements.txt           Person 1
 │   ├── config.yaml                Person 1
 │   ├── ingest/  (stages 1-4)      Person 1
