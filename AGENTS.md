@@ -108,7 +108,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 ## Known issues (to do)
 
 - Anomaly with a zero calendar-month median is not yet handled in code: must return `not_defined` (blank + flag), not inf/NaN.
-- `aggregate` builds the full month × cell grid per series: memory risk on large regions.
+- `grid_counts` builds the full month × cell grid per series: memory risk on regions much larger than India (India at 0.25° peaks at 4.6 GB, docs/09).
 - No de-duplication when overlapping downloads contain the same detection.
 - No `meta.json` yet (Person 2, CAL-1/CAL-4). Its `data_through`, `provisional_from` and cell size come from `normalized.meta.json` (ING-8); windows and baseline years still missing.
 - No daily counts, so month-to-date comparison is not possible yet.
