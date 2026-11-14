@@ -84,7 +84,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - Data: India, 0 km buffer, `data/raw/DL_FIRE_*`, each with `fire_archive_*.csv` (standard ML) and `fire_nrt_*.csv`. About 17.9M archive rows. Gitignored.
 - Sensor comes from the SATELLITE name (Terra, Aqua = MODIS; SNPP, N20, N21 = VIIRS). VIIRS files use MODIS-style column names.
 - Confidence: MODIS numeric 0-100, class cut-offs 30/80 **assumed** (not verified; label them as assumed); VIIRS l/n/h.
-- `type`: 0 vegetation fire, 1 volcano, 2 other static land source, 3 offshore. Archive only. NRT has no `type`, so unfiltered NRT months are overcounted (about 5% MODIS, 12-14% VIIRS). The static-source mask (ING-11) reduces this; its residual error must be measured and reported.
+- `type`: 0 vegetation fire, 1 volcano, 2 other static land source, 3 offshore. Archive only. NRT has no `type`. Static sources are 5-14% of detections over a year but **20-70% in the monsoon** (VIIRS 2025: Aug 70%, Sep 69%, Oct 43%), so unmasked NRT months were 2-4x too high. The static-source mask (ING-11, docs/10: 0.005° squares, >= 5 archive hits, provisional) brings NRT months within about ±4% of the true vegetation count (validated on archive data).
 - Archive and NRT do not overlap. `provisional_from` = 2026-08 (first VIIRS NRT month).
 - NOAA-21 starts 2023-03-01 (data), S-NPP ends 2026-11-02.
 - MODIS `version` 6.03 (2000-2022), 61.03 (2023+). Calibration windows lie in 6.03.
@@ -106,7 +106,6 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - Anomaly with a zero calendar-month median is not yet handled in code: must return `not_defined` (blank + flag), not inf/NaN.
 - `aggregate` builds the full month × cell grid per series: memory risk on large regions.
 - No de-duplication when overlapping downloads contain the same detection.
-- NRT static-source mask (ING-11) not built yet.
 - No `meta.json` yet (Person 2, CAL-1/CAL-4). Its `data_through`, `provisional_from` and cell size come from `normalized.meta.json` (ING-8); windows and baseline years still missing.
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.

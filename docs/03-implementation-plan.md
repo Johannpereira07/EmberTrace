@@ -360,7 +360,7 @@ make fixtures        # regenerate mock files from the live API
 |---|---|---|
 | ~~Real FIRMS archive never arrives~~ | **Resolved:** the archive arrived on 14 Nov (`data/raw/`, `docs/07-data-profile.md`). Synthetic data, labeled "Demonstration data" everywhere, stays the fallback if the real run fails or fails the 12:00 check | Person 2 |
 | Real data arrives but shows a jump | **At 12:00 Sunday:** use real data only if there is no step at 2002-07, 2012-01 and 2023-03 (NOAA-21 joins; same check as CAL-5). Otherwise demo synthetic and present the real results as a limitation | Person 2 |
-| NRT files have no `type` column | Without a filter, provisional months are overcounted by about 5% (MODIS) and 12 to 14% (VIIRS), which inflates the current month's anomaly. Apply the static-source mask (ING-11), keep months labeled provisional, and report the measured residual as a limitation | Persons 1 and 2 |
+| NRT files have no `type` column | Static sources are 20 to 70% of detections in the monsoon, so unmasked NRT months were 2 to 4× too high. **Done (ING-11):** the static-source mask brings them within about ±4% (`docs/10`). Keep months labeled provisional and report the ±4% as a limitation | Persons 1 and 2 |
 | API host is down during the demo | Frontend in mock mode on GitHub Pages as backup | Person 3 |
 | Someone falls behind | At the 02:30 stand-up, move one task to whoever is ahead; the folder moves with it | Team |
 | New ideas late in the build | No new features after 12:00 Sunday. Ideas go into "Future work" in the README | Team |

@@ -52,9 +52,13 @@ def platform_weight(series, month, outage_days=None):
     return w
 
 
-def aggregate(u, res, outage_days=None):
-    """Detections per (series, month, grid cell), divided by satellites observing (minus outage days)."""
-    u = u[u["conf_class"].isin(["nominal", "high"]) & (u["type"] == 0)].copy()
+def aggregate(u, res, outage_days=None, exclude=None):
+    """Detections per (series, month, grid cell), divided by satellites observing (minus outage days).
+    `exclude` (boolean Series on u, e.g. NRT rows inside the static-source mask) drops rows before counting."""
+    keep = u["conf_class"].isin(["nominal", "high"]) & (u["type"] == 0)
+    if exclude is not None:
+        keep &= ~exclude
+    u = u[keep].copy()
     u["series"] = np.where(u["sensor"] == "MODIS", u["platform"],
                            np.where(u["sensor"] == "VIIRS", "VIIRS", None))
     unassigned = ~u["series"].isin(list(SERIES))

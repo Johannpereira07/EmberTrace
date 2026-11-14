@@ -3,6 +3,8 @@
 **Date:** 14 Nov 2026 · **By:** Person 1 · **Code:** `main` at `5740dd0` (after ING-6) · **Command:** `make pipeline`
 **Input:** all 8 files in `data/raw/` (India, archive + NRT): 18,035,986 detections, 2000-11-01 to 2026-11-13
 
+> **Update (ING-11):** this run predates the NRT static-source mask, so its Aug to Nov 2026 values are 2 to 4× too high. See `docs/10`. Everything else here still holds.
+
 > ⚠️ **These are not product results.** The pipeline runs end to end, but the calibration stages have a known issue (section 4) that creates large artificial jumps. Don't show these numbers as fire history.
 
 ## 1. Performance (ING-9)
