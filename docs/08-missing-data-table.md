@@ -135,4 +135,24 @@ The "weaker" days have so few detections around them that a natural zero day is 
 | Mid-Aug 2007 | Detections present on most days for both Terra and Aqua. Not a full outage. |
 | 2009-04-21/22 | Hundreds of detections on both days for both satellites. Not a full outage over India. |
 
+### What the 21 unlisted empty days are
+
+**They are gaps for one satellite, not days without fire.** On 19 of the 21, other satellites detected fires over India on the same day. Examples: Terra 2017-04-24 (usually ~243; Aqua 287 and S-NPP 3,199 that day), Terra 2026-03-27 (~158; VIIRS 5,000 to 7,000 per satellite), Aqua 2026-01-03 (~144; VIIRS ~900 to 1,100), NOAA-21 2024-02-27/28 (~1,700; S-NPP and NOAA-20 1,200 to 2,200). The other two days, Terra 2001-10-07 and 2002-03-28, can't be cross-checked because Terra was the only satellite flying.
+
+**Some are edges of listed gaps that run a day longer than the table says:** Terra 2008-12-20 and 12-23 bracket the listed 12-21..22. Terra 2002-03-28 extends the listed 03-20..27. NOAA-21 has day detections but no night ones on 2024-02-26, then nothing on 02-27 and 02-28, so its outage probably began partway through 02-26. Because 02-26 has detections, it counts as observed (partial day).
+
+**Likely reason they're not in the FIRMS list (unconfirmed):** the table lists days missing from the FIRMS database worldwide. If only the passes over India were lost, the day isn't missing globally, so only a regional check like this one finds it.
+
+**Effect on the product:**
+
+| Effect | Days |
+|---|---|
+| Changes calendar values | Terra 2001-10-07, 2002-03-28 (chained segment); Aqua 2002-11-15, 2003-05-12, 2007-02-12 (Aqua is the source); S-NPP 2023-07-26, 2025-07-07, NOAA-21 2024-02-27/28 (VIIRS months) |
+| Changes calibration fits only | Terra 2003-02-01, 2004-02-19, 2008-12-20, 2008-12-23 (Terra to Aqua window); Aqua 2018-10-10 (Aqua to VIIRS window) |
+| No effect (satellite not used then) | Terra 2013-10-25, 2014-10-26, 2017-04-24, 2019-10-26, 2023-01-01, 2026-03-27; Aqua 2026-01-03 |
+
+### Days with no data from any satellite
+
+The rule checks each satellite on its own, so on a day when every flying satellite is empty, every satellite gets an outage. In our data this happens on **28 days, all from the period when Terra was the only satellite**: 2001-06-16..07-02, 2001-10-07, 2002-03-20..28 and 2002-04-15. From July 2002 on, there's no day when every flying satellite is empty. Such a day would point to a problem with our download, not an outage.
+
 **Rule for the pipeline (ING-6):** a satellite-day is an **outage** only if our data has **zero detections** for that satellite that day **and** (FIRMS lists it **or** the neighbouring days are clearly non-zero). Any day with at least one detection is observed, even if FIRMS lists it. Partial days (fewer detections than usual) count as fully observed, which is a known limitation of at most about 3% of a month's weight per day. The cut-off for "clearly non-zero" is a config value, labeled provisional. `scripts/check_outages.py` applies this rule and regenerates the lists above.
