@@ -180,6 +180,9 @@ function AppShell() {
         </div>
 
         <div className="hidden sm:flex items-center gap-3">
+          <a href="#" className="text-xs text-slate-300 hover:text-white underline underline-offset-4 decoration-slate-600">
+            How it works
+          </a>
           <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800">
             <span className="inline-block w-2 h-2 rounded-full bg-purple-400" /> Terra
             <span className="text-slate-600">→</span>
