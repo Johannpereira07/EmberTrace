@@ -30,7 +30,7 @@ export type ErrorCode =
 // ---- Requests ----
 
 export interface Bbox {
-  type: "bbox";
+  type?: "bbox";
   min_lat: number;
   max_lat: number;
   min_lon: number;
@@ -116,7 +116,7 @@ export interface MonthRange {
 }
 
 export interface ApiWarning {
-  code: WarningCode;
+  code: WarningCode | string;
   message: string;
   ranges: MonthRange[]; // empty = applies to the whole selection
 }
@@ -138,3 +138,13 @@ export interface ErrorBody {
 export interface ErrorResponse {
   error: ErrorBody;
 }
+
+// ---- Frontend Role 5 & Cross-Team Compatibility Aliases ----
+
+export type SatelliteSensorSource = Source | null;
+export type MonthState = State;
+export type ApiMonthData = MonthRow;
+export type CalendarApiResponse = CalendarResponse;
+export type CalendarApiResponseMeta = CalendarMeta;
+export type BoundingBox = Bbox;
+export type ApiErrorEnvelope = ErrorResponse;
