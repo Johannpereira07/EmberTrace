@@ -125,7 +125,7 @@ This table provides a list of days where data is missing from the NASA FIRMS dat
 
 The "weaker" days have so few detections around them that a natural zero day is possible.
 
-**Readme/FAQ dates in CLAUDE.md, checked:**
+**Readme/FAQ dates in AGENTS.md, checked:**
 
 | Readme/FAQ | Our data |
 |---|---|

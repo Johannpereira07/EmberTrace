@@ -37,6 +37,6 @@ All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78
 | Starts at **2000-12**, not 2000-11, so `meta.coverage.first_month` is `2000-12` | The table starts at the first month with a detection | ING-6 / ING-8 |
 | **No unavailable months** (no NaN in `harmonized_count`) | Every month in this range has a satellite | Test `unavailable` with the API spec mocks (A.1, A.2), or a request before `coverage.first_month` (→ `INVALID_DATES`) |
 | Calibration was fitted on these 16 cells only | The product fits once on the whole region | CAL-2 (Person 2) |
-| **Before 2012, cells with 0 detections show 4.4 (`AQUA_calibrated`) or 14.2 (`TERRA_chained`), not 0.** So there are no `zero` months before 2012, and e.g. Jun 2001 sums to ~242 from 1 real detection. Don't read these as real fires | The conversions have a positive intercept, so `apply_log_line(0) > 0` (CLAUDE.md, Known issues) | CAL-2 / CAL-3 (Person 2) |
+| **Before 2012, cells with 0 detections show 4.4 (`AQUA_calibrated`) or 14.2 (`TERRA_chained`), not 0.** So there are no `zero` months before 2012, and e.g. Jun 2001 sums to ~242 from 1 real detection. Don't read these as real fires | The conversions have a positive intercept, so `apply_log_line(0) > 0` (AGENTS.md, Known issues) | CAL-2 / CAL-3 (Person 2) |
 
 `data_kind` is `real` because the detections are real. But these numbers are not product values: don't show them as results in the demo.

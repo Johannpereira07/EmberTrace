@@ -24,7 +24,7 @@ Read in order. When docs disagree, follow "Precedence" below.
 4. **API Spec (04)** is the contract between backend and frontend, inside the PRD's requirements.
 5. **Architecture (02)** covers science and methodology only where nothing above overrides it.
 
-If two docs disagree in a way these rules don't settle, stop and ask the team (see `CLAUDE.md`).
+If two docs disagree in a way these rules don't settle, stop and ask the team (see `AGENTS.md`).
 
 ## Role names across docs
 
