@@ -29,5 +29,17 @@
     "NOAA-21": 2,
     "SNPP": 51,
     "Terra": 69
+  },
+  "nrt_static_mask": {
+    "cell_deg": 0.005,
+    "min_hits": 5,
+    "dilate": 0,
+    "squares": {
+      "MODIS": 2,
+      "VIIRS": 31
+    },
+    "nrt_rows_dropped": {
+      "VIIRS": 586
+    }
   }
 }

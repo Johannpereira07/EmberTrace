@@ -39,11 +39,9 @@ The rule needs region-wide daily counts. On a **small spatial subset**, pass the
 
 A satellite counts as observing from the **first month it has a detection in the loaded data** (`restrict_to_loaded_data`, a guard against a missing file). In the full India files every satellite's first detection is exactly its mission start (checked 14 Nov: Terra 2000-11-01, Aqua 2002-07-04, S-NPP 2012-01-20, NOAA-20 2018-04-01, NOAA-21 2023-03-01), so this is correct there. On a small subset it starts a satellite too late, and the table can start after 2000-11. **The pipeline now warns when this happens.** The samples here are subsets and show it: Aqua is NaN until 2002-11, `TERRA_chained` runs to 2002-11, and the table starts at 2000-12.
 
-## Still open
+## NRT static-source mask (ING-11)
 
-| Behaviour | Fix |
-|---|---|
-| NRT months (2026-08 on) include non-vegetation detections | ING-11 (static-source mask) |
+NRT files have no `type`, so before counting, NRT detections at known static sources (squares with >= 5 archive detections of type 1/2/3, per sensor) are dropped. Archive rows are never masked. Effect on the full India run: VIIRS Aug to Nov 2026 down 60%, 74%, 47% and 21%, matching the static share in those months a year earlier. Remaining error about ±4% (validated on archive data). Details in `docs/10-nrt-static-mask.md`.
 
 ## Sidecar: `normalized.meta.json` (ING-8)
 
@@ -51,12 +49,14 @@ Dataset-level values, written by `pipeline/run.py` next to `normalized.csv` and 
 
 | Field | Type | Meaning |
 |---|---|---|
+| `data_kind` | string | `real`, or `synthetic` when the input folders carry `SYNTHETIC.txt` (from `tools/synthetic`). Pass it on into `meta.json` |
 | `data_through` | date string | Last day with **VIIRS** data. VIIRS is the source of every month from 2012 on, so this decides whether the latest month is partial. Real data: `2026-11-13` |
 | `provisional_from` | `YYYY-MM` or null | First month with VIIRS near-real-time (NRT) data; that month and every later one are provisional. Real data: `2026-08`. Null, with a warning, if no NRT rows were loaded |
 | `source_series` | string | `VIIRS`: the series the two values above come from |
 | `cell_size_deg` | number | The `--res` the table was built with |
 | `by_series` | object | Per series (`Terra`, `Aqua`, `VIIRS`; null if absent): `first_day`, `last_day`, `archive_last_day`, `first_nrt_month` |
 | `outage_days` | object | Number of outage days per satellite removed from the observed days (ING-6) |
+| `nrt_static_mask` | object | Mask settings (`cell_deg`, `min_hits`, `dilate`), `squares` per sensor, and `nrt_rows_dropped` (nominal/high NRT rows removed) per sensor (ING-11) |
 
 - Computed from **all** loaded rows, before filtering: a low-confidence detection still shows that the satellite was observing that day.
 - Read from detections, so on a small area with few fires the last day or first NRT month can come out later or earlier than the files' real ones. For example, MODIS `first_nrt_month` is 2026-10/11 in the samples, but 2026-09 in the India-wide files. The real pipeline loads all of India.

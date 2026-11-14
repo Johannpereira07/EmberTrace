@@ -38,6 +38,9 @@ def load_config(path=CONFIG_PATH):
     out = cfg.get("outages") or {}
     if not (out.get("firms_table") and out.get("min_neighbour_median", -1) >= 0 and out.get("window_days", 0) >= 5):
         raise ValueError(f"{path}: outages needs firms_table, min_neighbour_median >= 0 and window_days >= 5, got {out}")
+    m = cfg.get("nrt_static_mask") or {}
+    if not (m.get("cell_deg", 0) > 0 and m.get("min_hits", 0) >= 1 and m.get("dilate", -1) >= 0):
+        raise ValueError(f"{path}: nrt_static_mask needs cell_deg > 0, min_hits >= 1 and dilate >= 0, got {m}")
     return cfg
 
 
@@ -54,6 +57,7 @@ REPO_ROOT = CONFIG_PATH.parents[1]
 OUTAGE_TABLE = REPO_ROOT / CONFIG["outages"]["firms_table"]
 OUTAGE_MIN_NEIGHBOUR_MEDIAN = CONFIG["outages"]["min_neighbour_median"]
 OUTAGE_WINDOW_DAYS = CONFIG["outages"]["window_days"]
+NRT_MASK = CONFIG["nrt_static_mask"]   # cell_deg, min_hits, dilate
 
 # FIRMS `satellite` codes -> platform names. A lookup, not a tunable, so it stays in code.
 SAT_MAP = {"T": "Terra", "TERRA": "Terra", "A": "Aqua", "AQUA": "Aqua",

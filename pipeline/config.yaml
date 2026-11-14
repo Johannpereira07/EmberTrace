@@ -33,6 +33,14 @@ outages:
   min_neighbour_median: 20   # PROVISIONAL placeholder, not validated
   window_days: 31
 
+# NRT static-source mask (ING-11, docs/10). NRT files have no `type`, so NRT detections inside
+# squares of `cell_deg` that had >= `min_hits` archive detections of type 1/2/3 (per sensor) are dropped.
+# `dilate` grows the mask by that many squares. PROVISIONAL: chosen on Jan-Apr 2026, checked on May-Aug 2026.
+nrt_static_mask:
+  cell_deg: 0.005
+  min_hits: 5
+  dilate: 0
+
 # MODIS confidence (0-100) -> class. Below `low_below` is low, below `high_from` is nominal, else high.
 # STATUS: ASSUMED (30 / 80 are not verified against the FIRMS user guide). Label them as assumed.
 modis_confidence:
