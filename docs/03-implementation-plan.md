@@ -184,12 +184,12 @@ gantt
 
 | Item | Action | Owner |
 |---|---|---|
-| NOAA-21 start | Change config to **17 Jan 2024** (not 1 Mar 2023). The old date would make Mar 2023 to Jan 2024 about one third too low | Person 1 |
+| NOAA-21 start | ~~Change config to 17 Jan 2024~~ **Superseded:** keep **1 Mar 2023**. The real archive file (`J2V-C2`) has detections from 2023-03-01 (about 448k in 2023), see `docs/07-data-profile.md` | Person 1 |
 | S-NPP end | **2 Nov 2026 13:00 UTC** in config | Person 1 |
 | Terra and Aqua end dates | **Do not hard-code**; sources conflict | Person 1 |
 | MODIS confidence thresholds 30 / 80 | Verified; keep | Person 1 |
 | VIIRS archive letters `l/n/h` and `type` column | Still unverified; check on the first real file | Person 1 |
-| PRD text that still says NOAA-21 from 2023 | Add a short errata note to `docs/` | Person 2 |
+| ~~PRD text that still says NOAA-21 from 2023~~ | Not needed: the PRD date is correct (it can drop the [Unverified] label) | Person 2 |
 
 ---
 
@@ -204,7 +204,7 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | ID | Block | Task | Done when |
 |---|---|---|---|
 | ING-1 | A | Split `harmonize.py` into `ingest/` and `model/`; write H1 | Old tests pass unchanged |
-| ING-2 | A | Apply the config corrections (NOAA-21, S-NPP end, no hard-coded Terra/Aqua end) | Test shows no dip between Mar 2023 and Jan 2024 |
+| ING-2 | A | Apply the config corrections (NOAA-21, S-NPP end, no hard-coded Terra/Aqua end) | Test shows no step at 2023-03 (NOAA-21 joins) |
 | ING-3 | B | Loader: NRT text format and archive CSV format; sensor detected from columns | Both sample files and hand-made archive files load |
 | ING-4 | B | `first_file_check.py`: reports VIIRS confidence letters and whether a `type` column exists | Ready to run on the first real file |
 | ING-5 | B | Filter (drop low confidence, keep type 0 where present) and grid at the configured cell size; **empty cells filled with 0** | Unit tests for both |
@@ -225,7 +225,7 @@ Every person has about the same amount of work: around 9 to 10 build tasks, plus
 | CAL-2 | B | Calibrate: Aqua to VIIRS on 2012 to 2019, Terra to Aqua on Aug 2002 to Dec 2011, bias factor, 70/30 hold-out, fit guard | Planted synthetic relationship recovered; one-day sample refused |
 | CAL-3 | B | Harmonize: source per month (VIIRS from 2012, calibrated Aqua Jul 2002 to Dec 2011, chained Terra before); never blend after 2012 | Unit tests per period |
 | CAL-4 | B | Export: `cell_month.parquet` (with raw counts per series for the low-count flag), `calibration.json`, `meta.json` | Matches H2 exactly |
-| CAL-5 | B | `science/splice_check.py`: pass/fail at **2002-07, 2012-01 and 2024-01**; added to `make test` | Runs on every pipeline change |
+| CAL-5 | B | `science/splice_check.py`: pass/fail at **2002-07, 2012-01 and 2023-03** (NOAA-21 joins); added to `make test` | Runs on every pipeline change |
 | CAL-6 | B | Cell size check: 0.25° vs 0.5° on synthetic data; post the result | Decision confirmed or changed via `meta.json` |
 | CAL-7 | C | **Hero figure:** raw MODIS + VIIRS counts (visible jump at 2012) next to the harmonized series (no jump), labeled synthetic | PNG in `science/figures/` |
 | CAL-8 | C | Real-data runbook + scripts: overlap plot 2012 to 2019, drift check 2020 onward, hold-out errors, known bad season check | Ready to run in one command |

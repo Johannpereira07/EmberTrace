@@ -22,3 +22,6 @@ web/dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Pipeline outputs (unified.csv alone is several GB on the real archive)
+out/

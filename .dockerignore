@@ -13,3 +13,4 @@ tools
 pipeline
 contracts
 *.md
+out/
