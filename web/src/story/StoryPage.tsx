@@ -60,14 +60,12 @@ function useFacts(data: StoryData) {
     const viirsYears = full.filter((y) => y.sources.length === 1 && y.sources[0] === 'VIIRS');
     const singleSat = viirsYears.find((y) => y.year > (firstViirs?.year ?? 0)) ?? firstViirs; // first year S-NPP flew all 12 months
     const lastFull = viirsYears[viirsYears.length - 1];
-    const preViirs = data.years.filter((y) => !y.sources.includes('VIIRS'));
     const sats = data.satellites;
     return {
       lastAqua,
       jumpTo,
       singleSat,
       lastFull,
-      preViirsRange: preViirs.length ? [preViirs[0].year, preViirs[preViirs.length - 1].year] as const : null,
       n20: sats['NOAA-20'] ? yearOf(sats['NOAA-20'].start) : null,
       n21: sats['NOAA-21'] ? yearOf(sats['NOAA-21'].start) : null,
       viirsStart: data.years.find((y) => y.sources.includes('VIIRS'))?.year ?? null,
@@ -78,7 +76,19 @@ function useFacts(data: StoryData) {
           1) /
           12,
       ),
-      pending: data.pipeline_version.includes('calibration-pending'),
+      check: (() => {
+        const fitEnd = yearOf(data.conversion.aqua_to_viirs_window[1]);
+        const overlap = full.filter((y) => y.aqua_converted !== null && y.harmonized > 0);
+        if (!overlap.length) return null;
+        const dev = Math.max(...overlap.map((y) => Math.abs((y.aqua_converted as number) / y.harmonized - 1)));
+        const unseen = overlap.filter((y) => y.year > fitEnd);
+        return {
+          first: overlap[0].year,
+          last: overlap[overlap.length - 1].year,
+          maxPct: Math.ceil(dev * 100),
+          unseen: unseen.length ? [unseen[0].year, unseen[unseen.length - 1].year] : null,
+        };
+      })(),
       synthetic: data.data_kind === 'synthetic',
     };
   }, [data]);
@@ -216,28 +226,42 @@ function Story({ data }: { data: StoryData }) {
               years to what VIIRS would have seen, using the years when both flew together. Each month keeps a
               label saying which satellite it came from.
             </p>
-            {f.pending && f.preViirsRange && (
-              <p className="story-flag">
-                Not finished: the conversion still turns grid cells with no fires into small positive counts.
-                That inflates every year from {f.preViirsRange[0]} to {f.preViirsRange[1]}, the Terra-only years
-                most. Those years are hatched below and are provisional until the fix lands.
+            {f.check && (
+              <p>
+                Does the conversion hold up? Aqua kept flying after VIIRS arrived, so we can test it. Converted
+                the same way, Aqua's yearly count lands within <strong>{f.check.maxPct}%</strong> of VIIRS in every
+                full year from {f.check.first} to {f.check.last}
+                {f.check.unseen && (
+                  <>
+                    , including {f.check.unseen[0]} to {f.check.unseen[1]}, which the conversion never saw
+                  </>
+                )}
+                .
               </p>
             )}
           </div>
           <div className="story-wide">
             <YearChart
               title="EmberTrace VIIRS-equivalent detections per year, per satellite"
-              summary="Harmonized yearly detections over India on one VIIRS-equivalent scale."
+              summary={`Yearly detections over India on one VIIRS-equivalent scale. In the VIIRS years, converted Aqua stays within ${f.check?.maxPct ?? '?'}% of VIIRS.`}
               years={data.years}
-              value={(y) => y.harmonized}
+              value={(y) => y.ratio_converted}
               color={(y) => SOURCE_COLOR[mainSource(y)]}
               legend={legendFor(ALL_SOURCES)}
+              overlay={{ value: (y) => y.aqua_converted, color: '#dfe6f3', label: 'Aqua, converted the same way' }}
               band={
-                f.pending && f.preViirsRange
-                  ? { from: f.preViirsRange[0], to: f.preViirsRange[1], label: 'Provisional: calibration fix pending' }
-                  : terraYears.length
-                    ? { from: terraYears[0].year, to: terraYears[terraYears.length - 1].year, label: 'Least certain (Terra only)' }
-                    : undefined
+                terraYears.length
+                  ? { from: terraYears[0].year, to: terraYears[terraYears.length - 1].year, label: 'Least certain: Terra only' }
+                  : undefined
+              }
+              footnote={
+                <>
+                  MODIS years use the overlap ratio from the pipeline's calibration: Aqua ×
+                  {data.conversion.aqua_to_viirs.toFixed(2)} (fitted {yearOf(data.conversion.aqua_to_viirs_window[0])}–
+                  {yearOf(data.conversion.aqua_to_viirs_window[1])}), Terra ×{data.conversion.terra_to_aqua.toFixed(2)} to
+                  Aqua (fitted {yearOf(data.conversion.terra_to_aqua_window[0])}–
+                  {yearOf(data.conversion.terra_to_aqua_window[1])}).
+                </>
               }
             />
           </div>
@@ -275,8 +299,7 @@ function Story({ data }: { data: StoryData }) {
       <footer className="story-footer">
         <p>
           Counts are satellite fire detections, not burned area. Data: NASA FIRMS, MODIS Collection 6.1 and VIIRS
-          Collection 2, India, {data.cell_size_deg}° grid. Pipeline {data.pipeline_version}. NASA Space Apps
-          Challenge 2026.
+          Collection 2, India, {data.cell_size_deg}° grid. NASA Space Apps Challenge 2026.
         </p>
       </footer>
     </div>

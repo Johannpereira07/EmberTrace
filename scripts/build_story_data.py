@@ -21,6 +21,7 @@ RAW_COLUMN = {"TERRA_chained": "terra", "AQUA_calibrated": "aqua", "VIIRS": "vii
 def main() -> None:
     meta = json.loads((ROOT / "data/meta.json").read_text())
     config = yaml.safe_load((ROOT / "pipeline/config.yaml").read_text())
+    calibration = json.loads((ROOT / "data/calibration.json").read_text())
     df = pd.read_parquet(ROOT / "data/cell_month.parquet")
 
     monthly = df.groupby("month").agg(
@@ -43,6 +44,19 @@ def main() -> None:
     monthly["naive_raw"] = [row[RAW_COLUMN[row["source"]]] for _, row in monthly.iterrows()]
     monthly["year"] = monthly.index.str[:4].astype(int)
 
+    # Overlap-ratio conversion: total VIIRS / total Aqua (and Aqua / Terra) over the fit windows,
+    # from the pipeline's calibration.json. It keeps 0 at 0, so it shows the record without the
+    # zero-to-positive issue of the log-line fit (AGENTS.md, Known issues). VIIRS months are unchanged.
+    a2v = calibration["aqua_to_viirs"]["ratio_y_to_x"]
+    t2a = calibration["terra_to_aqua"]["ratio_y_to_x"]
+    factor = {"VIIRS": None, "AQUA_calibrated": a2v, "TERRA_chained": t2a * a2v}
+    monthly["ratio_converted"] = [
+        row["harmonized"] if factor[row["source"]] is None else row[RAW_COLUMN[row["source"]]] * factor[row["source"]]
+        for _, row in monthly.iterrows()
+    ]
+    # Check: Aqua converted the same way, in the months VIIRS also flew.
+    monthly["aqua_converted"] = monthly["aqua"] * a2v
+
     years = []
     for year, g in monthly.groupby("year"):
         years.append(
@@ -52,6 +66,8 @@ def main() -> None:
                 "naive_raw": int(g["naive_raw"].sum()),
                 "viirs_raw": int(g["viirs"].sum()),
                 "harmonized": round(float(g["harmonized"].sum())),
+                "ratio_converted": round(float(g["ratio_converted"].sum())),
+                "aqua_converted": round(float(g["aqua_converted"].sum())) if (g["source"] == "VIIRS").all() else None,
                 "sources": sorted(g["source"].unique().tolist()),
             }
         )
@@ -69,6 +85,12 @@ def main() -> None:
         "pipeline_version": meta["pipeline_version"],
         "coverage": meta["coverage"],
         "cell_size_deg": meta["cell_size_deg"],
+        "conversion": {
+            "aqua_to_viirs": a2v,
+            "terra_to_aqua": t2a,
+            "aqua_to_viirs_window": calibration["aqua_to_viirs"]["window"],
+            "terra_to_aqua_window": calibration["terra_to_aqua"]["window"],
+        },
         "satellites": {name: {"series": s["series"], "start": s["start"]} for name, s in config["satellites"].items()},
         "years": years,
         "cells_years": [min(viirs_years), max(viirs_years)],

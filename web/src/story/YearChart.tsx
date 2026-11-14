@@ -28,6 +28,8 @@ interface Props {
   markers?: ChartMarker[];
   band?: ChartBand; // a range of years to flag (e.g. values known to be off)
   highlight?: [number, number]; // draw a step annotation between these two years
+  overlay?: { value: (y: StoryYear) => number | null; color: string; label: string };
+  footnote?: React.ReactNode;
 }
 
 const W = 760;
@@ -40,8 +42,8 @@ function niceMax(v: number): number {
   return 10 * mag;
 }
 
-export function YearChart({ title, summary, years, value, color, legend, markers = [], band, highlight }: Props) {
-  const max = niceMax(Math.max(...years.map(value)));
+export function YearChart({ title, summary, years, value, color, legend, markers = [], band, highlight, overlay, footnote }: Props) {
+  const max = niceMax(Math.max(...years.map(value), ...years.map((d) => overlay?.value(d) ?? 0)));
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
   const step = plotW / years.length;
@@ -112,6 +114,29 @@ export function YearChart({ title, summary, years, value, color, legend, markers
           );
         })}
 
+        {overlay && (
+          <g>
+            <polyline
+              fill="none"
+              stroke={overlay.color}
+              strokeWidth={1.5}
+              points={years
+                .filter((d) => overlay.value(d) !== null && d.months === 12)
+                .map((d) => `${x(d.year)},${y(overlay.value(d) as number)}`)
+                .join(' ')}
+            />
+            {years
+              .filter((d) => overlay.value(d) !== null && d.months === 12)
+              .map((d) => (
+                <circle key={d.year} cx={x(d.year)} cy={y(overlay.value(d) as number)} r={3.5} fill={overlay.color} stroke="#070b16" strokeWidth={1.5}>
+                  <title>
+                    {d.year}, {overlay.label}: {Math.round(overlay.value(d) as number).toLocaleString('en')}
+                  </title>
+                </circle>
+              ))}
+          </g>
+        )}
+
         {years
           .filter((d) => d.year % 5 === 0)
           .map((d) => (
@@ -150,6 +175,12 @@ export function YearChart({ title, summary, years, value, color, legend, markers
             {l.label}
           </li>
         ))}
+        {overlay && (
+          <li>
+            <span className="story-swatch story-swatch-dot" style={{ background: overlay.color }} aria-hidden="true" />
+            {overlay.label}
+          </li>
+        )}
         {years.some((d) => d.months < 12) && (
           <li>
             <span className="story-swatch story-swatch-partial" aria-hidden="true" />
@@ -157,6 +188,7 @@ export function YearChart({ title, summary, years, value, color, legend, markers
           </li>
         )}
       </ul>
+      {footnote && <p className="story-chart-footnote">{footnote}</p>}
     </figure>
   );
 }

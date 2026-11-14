@@ -356,3 +356,14 @@
     opacity: 0.45;
   }
 }
+
+.story-swatch-dot {
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.5px #070b16;
+}
+
+.story-chart-footnote {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

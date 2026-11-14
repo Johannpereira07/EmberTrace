@@ -13,7 +13,9 @@ export interface StoryYear {
   months: number; // months of data in this year (12 = full year)
   naive_raw: number; // raw detections of the month's source sensor, stitched end to end
   viirs_raw: number; // raw VIIRS detections, all VIIRS satellites together
-  harmonized: number; // EmberTrace VIIRS-equivalent detections per satellite
+  harmonized: number; // EmberTrace VIIRS-equivalent detections per satellite (pipeline output)
+  ratio_converted: number; // same, with MODIS years converted by the overlap ratio (keeps 0 at 0)
+  aqua_converted: number | null; // Aqua converted the same way, in VIIRS years only (the check)
   sources: Source[];
 }
 
@@ -22,6 +24,12 @@ export interface StoryData {
   pipeline_version: string;
   coverage: { first_month: string; last_month: string };
   cell_size_deg: number;
+  conversion: {
+    aqua_to_viirs: number;
+    terra_to_aqua: number;
+    aqua_to_viirs_window: [string, string];
+    terra_to_aqua_window: [string, string];
+  };
   satellites: Record<string, { series: string; start: string }>;
   years: StoryYear[];
   cells_years: [number, number];
