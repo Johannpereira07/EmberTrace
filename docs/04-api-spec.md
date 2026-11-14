@@ -22,6 +22,8 @@ Role 4: API and Backend Lead  |  NASA Space Apps 2026, Challenge 15
 
 The API is a thin, read-only layer over the precomputed pipeline output ( `cell_month.csv` ). For each request it maps the selected area to grid cells, sums the harmonized values per month, and builds the calendar and anomaly values. It never recalibrates satellites per request or per area (PRD 6.1; Architecture 8).
 
+**Sample data for the backend:** `contracts/samples/cell_month.central-india.csv` and `meta.central-india.json`, real FIRMS data for this spec's example area. It's a stand-in until Person 2's H2 schema, so read `contracts/samples/README.md` for its rules and quirks.
+
 The frontend is built against mock responses first. Mock and real responses share one shape, so switching to the real archive changes `meta.data_kind` from `synthetic` to `real` and changes no field (PRD 8, Maintainability).
 
 ### **2. Conventions**
