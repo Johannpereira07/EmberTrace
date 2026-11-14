@@ -171,7 +171,7 @@ Each warning has a `code` , a plain-language `message` , and `ranges` , a list o
 
 - **Not enough history.** `not_enough_history` applies when fewer years than a configured minimum exist for a calendar month. The threshold is set when real data is available (D5).
 
-- **Low count.** `[Proposed]` Based on the raw detection counts of the source sensor in the area, which `cell_month.csv` keeps per sensor (Architecture 4), not on the converted value. The threshold is a server configuration value, not a code constant, and is set after seeing real data (D5). `[Pending]` Role 1 to confirm the column names.
+- **Low count.** `[Proposed]` Based on the raw detection counts of the source sensor in the area, which `cell_month.csv` keeps per sensor (Architecture 4), not on the converted value. The threshold is a server configuration value, not a code constant, and is set after seeing real data (D5). The columns are currently `terra_count`, `aqua_count` and `viirs_count` (see `contracts/normalized.schema.md`; final names in H2). Compute `low_count` only for months that have a `source`, and leave it `false` for `unavailable` months. **Never use a raw count to decide `state`**: raw counts are 0 even when no satellite was flying, so `unavailable` vs `zero` must come from the harmonized value being null.
 
 - **Provisional and partial.** Both come from data ( `provisional_from` , `data_through` ), never from fixed UI constants (PRD 5.6, D4).
 

@@ -59,7 +59,7 @@ Make targets: `make pipeline | api | web | web-live | test | contract-test | fix
 
 ## Invariants (do not break)
 
-- **NaN ≠ 0.** NaN or `null` / `unavailable` means no satellite was observing. 0 / `zero` means observed with no fires. Keep this from the pipeline through the API, UI and CSV. Never write an unavailable month as 0.
+- **NaN ≠ 0.** NaN or `null` / `unavailable` means no satellite was observing. 0 / `zero` means observed with no fires. Keep this from the pipeline through the API, UI and CSV. Never write an unavailable month as 0. Raw count columns (`{s}_count`) are 0 even when the satellite wasn't flying: decide NaN vs 0 from `{s}_count_norm` (or the harmonized value / `source`), never from a raw count (contracts/normalized.schema.md).
 - **Never blend sensors after Jan 2012.** Never average MODIS and VIIRS.
 - **No per-request recalibration.** One fit per satellite pair for the whole region, done offline, never per selected area.
 - **Nothing hard-coded:** satellite dates, cell size, thresholds and provisional months come from config or `meta.json`.
