@@ -1,0 +1,40 @@
+{
+  "aqua_to_viirs": {
+    "slope": 1.0532063626347825,
+    "intercept": 1.4372785925145872,
+    "bias_factor": 1.3672262106312043,
+    "pearson_r_log": 0.6935729787291852,
+    "ratio_y_to_x": 9.598043297252309,
+    "n_cell_months": 818,
+    "n_months": 82,
+    "window": [
+      "2012-01",
+      "2019-12"
+    ]
+  },
+  "terra_to_aqua": {
+    "slope": 0.4854341710370371,
+    "intercept": 0.7004856278725431,
+    "bias_factor": 1.543812608169168,
+    "pearson_r_log": 0.42451677920834513,
+    "ratio_y_to_x": 1.694019471488178,
+    "n_cell_months": 361,
+    "n_months": 64,
+    "window": [
+      "2002-08",
+      "2011-12"
+    ]
+  },
+  "holdout_aqua_to_viirs": {
+    "train_months": 67,
+    "test_months": 29,
+    "monthly_total_corr": 0.9514010815662605,
+    "monthly_total_mean_abs_pct_error": 9.608815482704763
+  },
+  "holdout_terra_to_aqua": {
+    "train_months": 76,
+    "test_months": 33,
+    "monthly_total_corr": 0.9181128108890848,
+    "monthly_total_mean_abs_pct_error": 8.798182637346526
+  }
+}
