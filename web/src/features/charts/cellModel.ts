@@ -167,7 +167,7 @@ export function buildGridModel(response: CalendarApiResponse | null): GridModel 
     rows,
     maxCount: Math.max(1, observedMax),
     totalValidMonths: validCount,
-    monthlyMedians: response.meta?.baseline?.median_by_calendar_month || Array(12).fill(0),
+    monthlyMedians: (response.meta?.baseline?.median_by_calendar_month || Array(12).fill(0)).map((v: number | null) => v ?? 0),
     meta: response.meta,
     warnings: response.warnings || [],
   };

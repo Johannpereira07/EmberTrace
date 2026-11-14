@@ -259,11 +259,11 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
                       />
 
                       {cell.source === 'TERRA_chained' && !cell.isOutOfRange && (
-                        <circle cx={CELL_WIDTH - 4} cy="4" r="2" fill="#a855f7" title="Terra Chained" />
+                        <circle cx={CELL_WIDTH - 4} cy="4" r="2" fill="#a855f7"><title>Terra Chained</title></circle>
                       )}
 
                       {cell.isProvisional && !cell.isOutOfRange && (
-                        <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b" title="Provisional NRT" />
+                        <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b"><title>Provisional NRT</title></rect>
                       )}
 
                       {!cell.isOutOfRange && cell.value !== null && (
