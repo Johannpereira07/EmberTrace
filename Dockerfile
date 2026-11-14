@@ -8,9 +8,12 @@
 
 # ---- Stage 1: build the frontend ----
 FROM node:20-alpine AS web
-WORKDIR /web
+# Keep the repo layout: web/ imports ../contracts/api/types.ts and ../contracts/fixtures/*.json.
+WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
+COPY contracts/api/ /src/contracts/api/
+COPY contracts/fixtures/ /src/contracts/fixtures/
 COPY web/ ./
 # The deployed app always talks to the live API on the same origin.
 ENV VITE_USE_MOCKS=false
@@ -30,7 +33,7 @@ RUN pip install --no-cache-dir -r api/requirements.txt
 
 COPY api/ api/
 COPY data/cell_month.parquet data/meta.json data/
-COPY --from=web /web/dist static/
+COPY --from=web /src/web/dist static/
 
 RUN useradd --create-home appuser
 USER appuser
