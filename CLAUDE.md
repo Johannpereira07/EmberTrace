@@ -106,7 +106,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - No de-duplication when overlapping downloads contain the same detection.
 - NRT static-source mask (ING-11) not built yet.
 - Outage days not used yet: normalization counts mission dates only (ING-6, input now in docs/08).
-- No `meta.json` yet (cell size, provisional_from, windows, baseline years).
+- No `meta.json` yet (Person 2, CAL-1/CAL-4). Its `data_through`, `provisional_from` and cell size come from `normalized.meta.json` (ING-8); windows and baseline years still missing.
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`); tiny areas can make a satellite's first/last months look unobserved.
 

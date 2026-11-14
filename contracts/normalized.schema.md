@@ -37,9 +37,18 @@ One row per **(month, grid cell)**. Every cell that has at least one detection a
 | The month range starts at the first detection of any series, not at 2000-11 | The sample starts 2000-12; Nov 2000 is absent rather than present | ING-6 / ING-8: use the configured coverage start |
 | No outage days and no NRT static-source mask yet | NRT months (2026-08 on) are overcounted | ING-6, ING-11 |
 
-## Planned additions (ING-8, optional fields with notice)
+## Sidecar: `normalized.meta.json` (ING-8)
 
-- `data_through`: the last day covered by the input
-- `provisional_from`: the first NRT month (2026-08 in our data)
+Dataset-level values, written by `pipeline/run.py` next to `normalized.csv` and computed by `coverage_info()` in `pipeline/ingest/coverage.py`. Person 2 passes them on into `meta.json` (API spec §4). Sample: `contracts/samples/normalized.meta.central-india.json`.
 
-These are table-level values. They'll go in a small sidecar (`<out>/normalized.meta.json`) rather than in a column, so that Person 2 can pass them on into `meta.json`.
+| Field | Type | Meaning |
+|---|---|---|
+| `data_through` | date string | Last day with **VIIRS** data. VIIRS is the source of every month from 2012 on, so this decides whether the latest month is partial. Real data: `2026-11-13` |
+| `provisional_from` | `YYYY-MM` or null | First month with VIIRS near-real-time (NRT) data; that month and every later one are provisional. Real data: `2026-08`. Null, with a warning, if no NRT rows were loaded |
+| `source_series` | string | `VIIRS`: the series the two values above come from |
+| `cell_size_deg` | number | The `--res` the table was built with |
+| `by_series` | object | Per series (`Terra`, `Aqua`, `VIIRS`; null if absent): `first_day`, `last_day`, `archive_last_day`, `first_nrt_month` |
+
+- Computed from **all** loaded rows, before filtering: a low-confidence detection still shows that the satellite was observing that day.
+- Read from detections, so on a small area with few fires the last day or first NRT month can come out later or earlier than the files' real ones. For example, MODIS `first_nrt_month` is 2026-10/11 in the samples, but 2026-09 in the India-wide files. The real pipeline loads all of India.
+- If archive data runs into or past the first NRT month of the same series, a warning is printed (archive and NRT overlap: check for duplicates).
