@@ -153,7 +153,7 @@ function Story({ data }: { data: StoryData }) {
               {f.recordYears} years of fire, counted one way.
             </h1>
             <p className="story-lede story-hero-line">
-              NASA satellites have recorded the fires they could see over India since{' '}
+              NASA satellites have recorded fires across the planet since{' '}
               {monthLabel(data.coverage.first_month)}. But the satellites changed along the way, and each one
               counts fires differently. EmberTrace puts the whole record on one scale, so an unusual fire season
               stands out from a new instrument.
