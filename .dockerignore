@@ -1,0 +1,15 @@
+.git
+.github
+.env*
+**/__pycache__
+**/*.pyc
+.venv
+**/node_modules
+web/dist
+data/raw
+docs
+science
+tools
+pipeline
+contracts
+*.md

@@ -1,0 +1,13 @@
+# Files NOT uploaded by `gcloud run deploy --source .`
+# Written explicitly (no #!include:.gitignore) so the build always sees data/cell_month.parquet.
+.git
+.github
+.gcloudignore
+.env*
+**/__pycache__
+.venv
+**/node_modules
+web/dist
+data/raw/
+docs/
+science/
