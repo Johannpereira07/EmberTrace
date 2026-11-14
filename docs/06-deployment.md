@@ -87,6 +87,18 @@ These are contracts on the `api/` and `web/` code (the Dockerfile depends on the
 | Vite dev proxy `/api` → `http://localhost:8000`, so local dev also needs no CORS | Person 4 |
 | `data/cell_month.parquet` and `data/meta.json` exist before deploy (`make check-data`) | Person 2 |
 
+**API environment** (all optional; `api/settings.py`):
+
+| Variable | Default | Notes |
+|---|---|---|
+| `DATA_DIR` | `data` (`/app/data` in the image) | Folder with the pipeline outputs |
+| `CELL_MONTH_FILE` | `cell_month.parquet` | `.parquet` or `.csv` |
+| `META_FILE` | `meta.json` | |
+| `STATIC_DIR` | `static` (`/app/static` in the image) | Not mounted if the folder is missing (API-only local runs) |
+| `LOW_COUNT_THRESHOLD`, `MIN_BASELINE_YEARS` | from `api/config.json` | **Provisional** placeholders (PRD D5) |
+
+If the data is missing or breaks the contract, the server refuses to start, so a bad deploy fails instead of serving wrong numbers. Locally, `make api` serves the stand-in sample from `contracts/samples/` until H2 lands.
+
 FastAPI static mount (end of `api/main.py`):
 
 ```python

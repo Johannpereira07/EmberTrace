@@ -14,3 +14,5 @@ pipeline
 contracts
 *.md
 out/
+api/tests
+.pytest_cache
