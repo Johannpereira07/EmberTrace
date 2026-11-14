@@ -1,0 +1,17 @@
+{
+  "data_kind": "real",
+  "pipeline_version": "0.1-calibration-pending",
+  "cell_size_deg": 0.25,
+  "coverage": {
+    "first_month": "2000-11",
+    "last_month": "2026-11"
+  },
+  "data_through": "2026-11-13",
+  "provisional_from": "2026-08",
+  "grid_extent": {
+    "min_lat": 6.75,
+    "max_lat": 35.25,
+    "min_lon": 68.25,
+    "max_lon": 97.5
+  }
+}

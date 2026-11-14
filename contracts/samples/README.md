@@ -11,7 +11,10 @@
 
 All four come from **real FIRMS data** for one small region: 20.75–21.75 N, 78.5–79.5 E (central India, the API spec's example area). That's 16 cells of 0.25°, 2000-12 to 2026-11, archive plus NRT, produced by `pipeline/run.py --res 0.25 --outages contracts/samples/outages.india.csv` on the current `main`. Outage days come from the India-wide list (`outages.india.csv`), because a subset is too small to derive them.
 
-## ⚠️ Stand-in for H2
+## ⚠️ Stand-in for H2 (superseded)
+
+**H2 now exists** (`contracts/cell_month.schema.md`, `contracts/meta.schema.json`), and `data/cell_month.parquet` + `data/meta.json` hold the full India export (CAL-4). The API should load those. The stand-in files below are kept only as a small example.
+
 
 **Person 1 made `cell_month.*` and `meta.*` to unblock the API work (Person 3).** They aren't Person 2's H2 contract. Person 2 replaces them in CAL-1 / CAL-4 with `contracts/cell_month.schema.md`, `contracts/meta.schema.json` and `cell_month.parquet`. Column names may change then. Code the API against the API spec, and keep file loading in one place so the switch is a small edit.
 

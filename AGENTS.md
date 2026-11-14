@@ -20,6 +20,7 @@ Harmonize MODIS and VIIRS active-fire hotspots (NASA FIRMS) into one consistent 
 Exists now:
 - `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
 - `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model).
+- `pipeline/export.py` (`make export`): writes the app's data, `data/cell_month.parquet` + `data/meta.json` + `data/calibration.json` (handoff H2: `contracts/cell_month.schema.md`, `contracts/meta.schema.json`; CAL-4). The committed files are the full India run, labelled `pipeline_version: 0.1-calibration-pending` until the stage 5-7 fix. Regenerate with `make pipeline && make export`.
 - `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
 - `pipeline/config.yaml`: satellite dates and series, MODIS confidence thresholds (assumed), default cell size. Read and checked by `pipeline/ingest/satellites.py`; a bad value fails loudly (ING-2).
 - `pipeline/tests/ingest/`: pytest tests for stages 1-4.
@@ -43,6 +44,7 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
 make pipeline        # full India run into out/: about 2 min, peak about 4.6 GB RAM (docs/09)
 make pipeline-test
+make export          # out/ -> data/cell_month.parquet + data/meta.json for the API (CAL-4)
 make synthetic       # synthetic data with a planted answer: generate, run, check (no real data needed)
 python scripts/profile_raw.py
 python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
@@ -51,7 +53,7 @@ python -m pytest pipeline/tests
 
 Archive and NRT files can overlap in time. Until de-duplication exists (see Known issues), check the overlap before loading both.
 
-Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | pipeline-test | synthetic | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
+Make targets: `make api | web | web-live | test | contract-test | fixtures` (planned); `make pipeline | export | pipeline-test | synthetic | docker-run | deploy | demo-on | demo-off | url | logs` (exist).
 
 ## Method (do not change without asking)
 
@@ -110,7 +112,6 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - Anomaly with a zero calendar-month median is not yet handled in code: must return `not_defined` (blank + flag), not inf/NaN.
 - `grid_counts` builds the full month × cell grid per series: memory risk on regions much larger than India (India at 0.25° peaks at 4.6 GB, docs/09).
 - No de-duplication when overlapping downloads contain the same detection.
-- No `meta.json` yet (Person 2, CAL-1/CAL-4). Its `data_through`, `provisional_from` and cell size come from `normalized.meta.json` (ING-8); windows and baseline years still missing.
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.
 - **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. **Confirmed on the full India run (docs/09):** a cell with 0 detections becomes 3.22 (`AQUA_calibrated`) or 18.26 (`TERRA_chained`), a floor of ~15,000 / ~84,900 per month over 4,651 cells. The Jun to Jul 2002 change is ×0.18 (normal ×0.81 to 0.98), a large artificial step, and 46% of the pre-2012 total comes from cells with 0 detections. Fails the PRD success test. Needs a fix that keeps 0 at 0.

@@ -55,7 +55,8 @@ Set a budget alert (Billing → Budgets & alerts, e.g. $10) so nothing surprises
 ## Deploying
 
 ```bash
-make pipeline       # produces data/cell_month.parquet + data/meta.json
+make pipeline       # pipeline run into out/
+make export         # writes data/cell_month.parquet + data/meta.json (CAL-4)
 make docker-run     # optional: test the production container at http://localhost:8080
 make deploy         # Cloud Build builds the Dockerfile, Cloud Run serves it, prints the URL
 ```
