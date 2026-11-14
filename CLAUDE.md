@@ -16,13 +16,14 @@ Harmonize MODIS and VIIRS active-fire hotspots (NASA FIRMS) into one consistent 
 ## Repo layout
 
 Exists now:
-- `pipeline/harmonize.py`: current single-file pipeline (load -> filter -> grid+count -> normalize -> calibrate -> harmonize -> calendar).
+- `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
+- `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model), with a real-data sample in `contracts/samples/`.
 - `scripts/profile_raw.py`: profiles the raw FIRMS files (columns, codes, date ranges).
 - `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
 - `Dockerfile`, `Makefile`, `README.md`, `docs/`.
 
 Planned (docs/03 §2), not created yet:
-- `pipeline/ingest/` stages 1 to 4, `pipeline/model/` stages 5 to 7, `pipeline/config.yaml` (split out of `pipeline/harmonize.py`, task ING-1). Python + pandas + pyarrow.
+- `pipeline/config.yaml` (satellite dates and thresholds, ING-2).
 - `api/`: FastAPI. Contract in `contracts/api/types.ts` + `contracts/fixtures/*.json`.
 - `web/`: React + Vite + TypeScript, react-leaflet + leaflet-draw, D3 scales + SVG charts.
 - `tests/`: no tests exist yet.
@@ -36,7 +37,7 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 ```
 pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
 python scripts/profile_raw.py
-python pipeline/harmonize.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
+python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
 pytest   # no tests yet
 ```
 
