@@ -31,6 +31,9 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
         const drawControl = new LDraw.Control.Draw({
           draw: {
             rectangle: {
+              // leaflet-draw 1.0.4's area tooltip uses an undeclared `type` variable, which throws
+              // in ES modules and breaks dragging. No area tooltip, no crash.
+              showArea: false,
               shapeOptions: {
                 color: '#38bdf8',
                 weight: 2,
@@ -62,6 +65,22 @@ function DrawControls({ onBboxChange }: { onBboxChange: (bbox: AoiBbox) => void 
     });
   }, [map, onBboxChange]);
 
+  return null;
+}
+
+// Zoom to the selected area, keeping enough surroundings in view to recognise where it is.
+function FitToAoi({ aoi }: { aoi: AoiBbox | null }) {
+  const map = useMap() as LeafletMap;
+  useEffect(() => {
+    if (!aoi) return;
+    map.flyToBounds(
+      [
+        [aoi.min_lat, aoi.min_lon],
+        [aoi.max_lat, aoi.max_lon],
+      ],
+      { padding: [40, 40], maxZoom: 7, duration: 0.8 },
+    );
+  }, [map, aoi]);
   return null;
 }
 
@@ -105,6 +124,7 @@ export function EmberMap() {
         />
 
         <DrawControls onBboxChange={handleBboxChange} />
+        <FitToAoi aoi={state.aoi} />
 
         {/* User Drawn Selection (Neon Cyan) */}
         {requestedBounds && (

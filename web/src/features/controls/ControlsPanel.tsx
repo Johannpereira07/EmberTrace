@@ -10,9 +10,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAppState, AoiBbox } from '../../app/store';
-import { fetchCalendar, ApiError } from '../../api/client';
+import { useCalendarQuery } from '../../app/useCalendarQuery';
 
-const PRESETS: Array<{ name: string; icon: string; aoi: AoiBbox }> = [
+export const PRESETS: Array<{ name: string; icon: string; aoi: AoiBbox }> = [
   {
     name: 'Central India (Nagpur)',
     icon: '🌾',
@@ -72,6 +72,7 @@ function CoordInput({
 
 export function ControlsPanel() {
   const { state, dispatch } = useAppState();
+  const runQuery = useCalendarQuery();
 
   const [form, setForm] = useState<AoiBbox>({
     min_lat: state.aoi?.min_lat ?? 20.8,
@@ -90,9 +91,11 @@ export function ControlsPanel() {
     dispatch({ type: 'SET_AOI', aoi: updated });
   }
 
+  // A preset is a one-click demo: select it and run the query straight away.
   function applyPreset(presetAoi: AoiBbox) {
     setForm(presetAoi);
     dispatch({ type: 'SET_AOI', aoi: presetAoi });
+    runQuery(presetAoi);
   }
 
   const coverage = state.meta?.coverage;
@@ -100,22 +103,7 @@ export function ControlsPanel() {
   const endMax = coverage?.last_month ?? '2026-11';
 
   async function handleQuery() {
-    if (!state.aoi) return;
-    dispatch({ type: 'FETCH_START' });
-    try {
-      const data = await fetchCalendar({
-        aoi: { type: 'bbox', ...state.aoi },
-        start_month: state.startMonth ?? undefined,
-        end_month: state.endMonth ?? undefined,
-      });
-      dispatch({ type: 'FETCH_SUCCESS', data });
-    } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        dispatch({ type: 'FETCH_ERROR', code: err.code, message: err.message });
-      } else {
-        dispatch({ type: 'FETCH_ERROR', code: 'UNKNOWN', message: 'An unexpected error occurred.' });
-      }
-    }
+    if (state.aoi) await runQuery(state.aoi);
   }
 
   return (
@@ -126,7 +114,7 @@ export function ControlsPanel() {
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Quick Regions
           </span>
-          <span className="text-[10px] text-slate-600 font-medium">1-Click Test</span>
+          <span className="text-[10px] text-slate-500 font-medium">One click to load</span>
         </div>
         <div className="grid grid-cols-1 gap-1.5">
           {PRESETS.map((p) => {
