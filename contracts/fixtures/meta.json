@@ -1,0 +1,17 @@
+{
+  "data_kind": "real",
+  "pipeline_version": "0.1-standin-central-india",
+  "cell_size_deg": 0.25,
+  "coverage": {
+    "first_month": "2000-12",
+    "last_month": "2026-11"
+  },
+  "data_through": "2026-11-13",
+  "provisional_from": "2026-08",
+  "grid_extent": {
+    "min_lat": 20.75,
+    "max_lat": 21.75,
+    "min_lon": 78.5,
+    "max_lon": 79.5
+  }
+}

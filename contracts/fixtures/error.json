@@ -1,0 +1,13 @@
+{
+  "error": {
+    "code": "INVALID_AOI",
+    "message": "min_lat must be less than max_lat.",
+    "details": {
+      "field": "aoi.min_lat",
+      "received": {
+        "min_lat": 25,
+        "max_lat": 20
+      }
+    }
+  }
+}

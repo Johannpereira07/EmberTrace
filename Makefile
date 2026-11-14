@@ -1,12 +1,36 @@
 # EmberTrace Makefile. Owner: Person 3.
-# Deployment targets only for now; pipeline/api/web/test targets from docs/03 §6 get added as those layers land.
+# API and deployment targets. pipeline/web/web-live (docs/03 §6) get added as those layers land.
 
 PROJECT ?= embertrace-nasa26
 REGION  ?= asia-south1
 SERVICE ?= embertrace
 IMAGE   ?= embertrace:local
+PYTHON  ?= python
 
-.PHONY: check-data docker-build docker-run deploy demo-on demo-off url logs
+# Data the local API serves. Until Person 2's H2 lands: the stand-in sample (contracts/samples/README.md).
+# After `make pipeline`: make api API_DATA="DATA_DIR=data"
+API_DATA ?= DATA_DIR=contracts/samples CELL_MONTH_FILE=cell_month.central-india.csv META_FILE=meta.central-india.json
+
+.PHONY: api-deps api test contract-test fixtures check-data docker-build docker-run deploy demo-on demo-off url logs
+
+api-deps:
+	$(PYTHON) -m pip install -r api/requirements-dev.txt
+
+# Run the API locally at http://localhost:8000 (docs at /docs)
+api:
+	$(API_DATA) $(PYTHON) -m uvicorn api.main:app --reload --port 8000
+
+# All tests (API for now; pipeline tests join here when they exist)
+test:
+	$(PYTHON) -m pytest api/tests -q
+
+# Mock files = live API = contracts/api/types.ts
+contract-test:
+	$(PYTHON) -m pytest api/tests/test_contract.py -q
+
+# Regenerate contracts/fixtures/*.json from the live API (on the stand-in sample until H2 lands)
+fixtures:
+	$(API_DATA) $(PYTHON) -m api.fixtures
 
 check-data:
 	@test -f data/cell_month.parquet || (echo "data/cell_month.parquet missing: run 'make pipeline' first" && exit 1)
