@@ -35,7 +35,6 @@ One row per **(month, grid cell)**. Every cell that has at least one detection a
 |---|---|---|
 | A satellite counts as observing only from the **first month it has a detection in the loaded data** (`restrict_to_loaded_data`). In a small area this starts it too late | Aqua is NaN until 2002-11, because its first detection in this area is in Dec 2002 (Aqua launched 2002-07-04). Jul to Nov 2002 therefore fall back to the Terra chain | ING-6: observed days from mission dates minus outage days (`scripts/check_outages.py`) |
 | The month range starts at the first detection of any series, not at 2000-11 | The sample starts 2000-12; Nov 2000 is absent rather than present | ING-6 / ING-8: use the configured coverage start |
-| Satellite dates are hard-coded in `pipeline/ingest/satellites.py` | n/a | ING-2: `pipeline/config.yaml` |
 | No outage days and no NRT static-source mask yet | NRT months (2026-08 on) are overcounted | ING-6, ING-11 |
 
 ## Planned additions (ING-8, optional fields with notice)
