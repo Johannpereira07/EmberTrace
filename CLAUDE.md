@@ -34,6 +34,7 @@ Each folder has a single owner (docs/03 §2). Handoff files in `contracts/` chan
 ## Commands
 
 ```
+pip install -r pipeline/requirements.txt   # in whatever env you use (venv, conda, ...)
 python scripts/profile_raw.py
 python pipeline/harmonize.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --res 0.25 --out out/
 pytest   # no tests yet
