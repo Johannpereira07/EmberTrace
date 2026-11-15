@@ -54,6 +54,11 @@ splice_check:
   tolerance: 0.05
   truth_tolerance: 0.05
 
+# Stage 5 calibration (monthly_ratio: one factor per calendar month). Months listed here share one
+# factor because they have too few detections to fit alone (monsoon). Team decision 2026-11-15.
+calibration:
+  pooled_months: [6, 7, 8, 9]
+
 # MODIS confidence (0-100) -> class. Below `low_below` is low, below `high_from` is nominal, else high.
 # STATUS: ASSUMED (30 / 80 are not verified against the FIRMS user guide). Label them as assumed.
 modis_confidence:

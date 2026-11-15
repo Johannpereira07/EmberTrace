@@ -100,7 +100,7 @@ Yearly overlap ratio: Aqua→VIIRS ranges 7.47 to 8.51 (about +10% drift 2012 to
 - The splice check only detects large steps. Natural year-to-year variability is about ±27%, so a pass means "no step larger than roughly 50%". The overlap fit is the real evidence for calibration.
 - Terra→Aqua is not reliable month by month. Errors are seasonal: the prediction is too high in May-Sep (2-4×) and too low in Oct-Nov (0.2-0.4×). Use 2000-2011 values for yearly and seasonal patterns only. The overpass-time explanation (10:30 vs 13:30) is a hypothesis, not tested.
 - Aqua→VIIRS ratio drifts about 10% over 2012-2019. Treat the factor as ±10%.
-- The older `make splice-check` still fails 2012-01 (×0.94 vs 0.95-1.05) and 2023-03 (×1.56). Both are within placebo noise or expected sensor-count changes. Tolerances in `config.yaml` were not changed.
+- `make splice-check` fails 2002-07 (×1.09), 2012-01 (×0.94) (both vs 0.95-1.05) and 2023-03 (×1.56, weak check). With the single factor, 2002-07 was ×0.95 (pass). The deseasonalized check puts 2002-07 and 2012-01 within normal variation. Report both; tolerances in `config.yaml` were not changed.
 - NOAA-21 detected about 23.5% fewer fires than S-NPP in 2023 (spin-up), which pulls the 3-satellite average down by about 2% that year.
 
 ## Open items

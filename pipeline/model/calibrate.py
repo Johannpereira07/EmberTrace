@@ -16,7 +16,7 @@ All forms keep NaN as NaN (never confused with 0).
 import numpy as np
 import pandas as pd
 
-POOLED_MONSOON = (6, 7, 8, 9)
+POOLED_MONSOON = (6, 7, 8, 9)   # default for direct calls (tests); the pipeline passes config.yaml's value
 
 
 def _month_numbers(months):
@@ -104,7 +104,7 @@ def fit_monthly_ratio(cm, x_col, y_col, window, min_rows=30, min_months=12,
 
 
 def fit_log_line(cm, x_col, y_col, window, min_rows=30, min_months=12,
-                 method="monthly_ratio"):
+                 method="monthly_ratio", pooled_months=POOLED_MONSOON):
     """Fit a conversion from x to y over months inside `window`.
 
     method="monthly_ratio" (default): one factor per calendar month (Jun-Sep pooled),
@@ -115,7 +115,7 @@ def fit_log_line(cm, x_col, y_col, window, min_rows=30, min_months=12,
     Returns a dict with fit parameters; None if not enough data.
     """
     if method == "monthly_ratio":
-        return fit_monthly_ratio(cm, x_col, y_col, window, min_rows, min_months)
+        return fit_monthly_ratio(cm, x_col, y_col, window, min_rows, min_months, pooled_months)
     if method == "ratio_of_totals":
         return fit_ratio_totals(cm, x_col, y_col, window, min_rows, min_months)
 
@@ -199,7 +199,7 @@ def _call_apply(apply_fn, values, cal, months):
 
 
 def holdout_check(cm, x_col, y_col, window, train_fraction=0.7,
-                  apply_fn=apply_log_line, method="monthly_ratio"):
+                  apply_fn=apply_log_line, method="monthly_ratio", pooled_months=POOLED_MONSOON):
     """Fit on the first part of the window, test on the rest (monthly AOI totals)."""
     cm = cm.copy()
     # month may be Period (in-memory) or str (read back from CSV)
@@ -211,7 +211,7 @@ def holdout_check(cm, x_col, y_col, window, train_fraction=0.7,
         return None
     split = int(len(months) * train_fraction)
     cal = fit_log_line(cm, x_col, y_col, (str(months[0]), str(months[split - 1])),
-                       method=method)
+                       method=method, pooled_months=pooled_months)
     if cal is None:
         return None
     test = cm[cm["month"].isin(months[split:])].dropna(subset=[x_col, y_col]).copy()

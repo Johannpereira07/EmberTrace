@@ -26,7 +26,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "science"))
-from pipeline.ingest.satellites import CONFIG, END, START  # noqa: E402
+from pipeline.ingest.satellites import CONFIG, END, POOLED_MONTHS, START  # noqa: E402
 from pipeline.model.calibrate import apply_log_line, fit_log_line  # noqa: E402
 from placebo_lib import placebo_ratios, window_ratio  # noqa: E402
 from splice_check import excluded_months  # noqa: E402
@@ -116,9 +116,9 @@ def main():
         k = int(len(months) * 0.7)
         cm_m = cm.assign(month=cm["_m"])
         cal_full_s = fit_log_line(cm_m, x, y, win, method="ratio_of_totals")
-        cal_full_m = fit_log_line(cm_m, x, y, win, method="monthly_ratio")
+        cal_full_m = fit_log_line(cm_m, x, y, win, method="monthly_ratio", pooled_months=POOLED_MONTHS)
         cal_tr_s = fit_log_line(cm_m, x, y, (str(months[0]), str(months[k - 1])), method="ratio_of_totals")
-        cal_tr_m = fit_log_line(cm_m, x, y, (str(months[0]), str(months[k - 1])), method="monthly_ratio")
+        cal_tr_m = fit_log_line(cm_m, x, y, (str(months[0]), str(months[k - 1])), method="monthly_ratio", pooled_months=POOLED_MONTHS)
 
         both["pred_single"] = apply_log_line(both[x], cal_full_s, months=both["_m"])
         both["pred_monthly"] = apply_log_line(both[x], cal_full_m, months=both["_m"])

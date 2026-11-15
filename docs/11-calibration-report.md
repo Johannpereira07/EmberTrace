@@ -22,9 +22,11 @@
 
    - **Full-window (`2012-01..2019-12`) Aqua → VIIRS factors:** global `factor = 7.9791`; monthly factors (`6..9` pooled): `m1=8.39, m2=8.39, m3=7.43, m4=10.03, m5=12.26, m6..9=16.67, m10=5.02, m11=6.27, m12=8.74`.
    - **Full-window (`2002-08..2011-12`) Terra → Aqua factors:** global `factor = 2.7718`; monthly factors (`6..9` pooled): `m1=2.19, m2=2.50, m3=3.55, m4=2.15, m5=1.03, m6..9=1.26, m10=4.15, m11=6.46, m12=1.96`.
-3. **Both sensor handovers pass the deseasonalized splice check (`science/splice_placebo.py`):**
+3. **Handover steps: two checks, reported together.**
+   - **`make splice-check` (`science/splice_check.py`, 12-month overlap, provisional tolerance ±5%): FAIL at all three.** `2002-07` ×1.09, `2012-01` ×0.94, `2023-03` ×1.56 (weak check). With the single factor, `2002-07` was ×0.95 (pass). The tolerance was not changed.
+   - **Deseasonalized check (`science/splice_placebo.py`): both source handovers are within normal year-to-year variation.** It sets no threshold, so it reports z-scores, not a pass/fail:
    - Comparing the 12-month sum after vs 12-month sum before across `217` interior placebo months (`mean = 1.0501`, `std = 0.2649`, `min = 0.6451`, `max = 2.0450`):
-     - **`2002-07` (`TERRA_chained` → `AQUA_calibrated`):** `309,138` → `310,320`, ratio **`×1.004`** (**`−0.17σ`**) — virtually zero step at the handover!
+     - **`2002-07` (`TERRA_chained` → `AQUA_calibrated`):** `309,138` → `310,320`, ratio **`×1.004`** (**`−0.17σ`**): no visible step at this scale.
      - **`2012-01` (`AQUA_calibrated` → `VIIRS`):** `367,356` → `464,257`, ratio **`×1.264`** (**`+0.81σ`**) — well within normal year-to-year variability (`splice_check.py` overlap step = `×0.94`, reflecting 2012's annual ratio `7.465` being 6.4% below the 8-year average `7.979`).
      - **`2023-03` (`NOAA-21` joins):** `478,402` → `375,117`, ratio **`×0.784`** (**`−1.00σ`**).
 4. **VIIRS multi-satellite normalization verified:**

@@ -42,7 +42,7 @@ Every month on the 0.25° grid is expressed in **VIIRS-equivalent detections per
 ![India fire detections 2000-2026, NASA FIRMS](../science/figures/hero.png)
 
 ### Slide B: Limitations (Exact Wording)
-> **Calibrated on the 2012–2019 overlap (monthly-total $r = 0.996$ with seasonal factors, $0.96$ single factor). Handover steps are within natural variability, but the splice check can only detect large steps. 2000–2011 values carry higher uncertainty than 2012+.**
+> **Calibrated on the 2012–2019 overlap (monthly-total $r = 0.996$ with seasonal factors, $0.96$ single factor). Handover steps are within natural year-to-year variability, but the stricter 12-month overlap check (provisional ±5%) flags 2002-07 (×1.09) and 2012-01 (×0.94). 2000–2011 values carry higher uncertainty than 2012+.**
 
 - **Slight positive bias on Aqua → VIIRS (`mean pred/actual = 1.17`):** While median hold-out error drops from **19.8% to 8.7%** (`MAPE = 23.3%`), the prediction is slightly high on average (`1.17×`) across hold-out months, pulled up by low-count monsoon months.
 - **Monsoon factor uncertainty (`Jun–Sep` Aqua → VIIRS factor $\approx 17$):** The pooled Jun–Sep factor for Aqua→VIIRS is **16.7** (~17), roughly double the other months (`5.0–12.3`). The monsoon season is where calibration is least certain because active-fire counts are tiny across India (`30–100` Aqua detections/month).
