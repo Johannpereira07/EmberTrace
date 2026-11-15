@@ -11,6 +11,6 @@ def calendar(cm):
     mat = cal.pivot(index="year", columns="m", values="v").round(1)
     med = mat.median(axis=0)
     # Zero median -> not_defined (blank), never inf/NaN (AGENTS.md invariant).
-    med = med.replace(0, pd.NA)
+    med = med.replace(0, float("nan"))
     anom = (mat.div(med, axis=1)).round(2)
     return mat, anom

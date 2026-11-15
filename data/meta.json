@@ -1,6 +1,6 @@
 {
   "data_kind": "real",
-  "pipeline_version": "0.1-calibration-pending",
+  "pipeline_version": "0.3-monthly-ratio",
   "cell_size_deg": 0.25,
   "coverage": {
     "first_month": "2000-11",
