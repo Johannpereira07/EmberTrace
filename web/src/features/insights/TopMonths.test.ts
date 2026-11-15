@@ -57,7 +57,7 @@ const testResponse: CalendarApiResponse = {
     pipeline_version: '1.0.0',
     unit: 'count',
     cell_size_deg: 0.25,
-    coverage: { first_month: '2021-03', last_month: '2021-06', first_satellite: 'VIIRS', last_satellite: 'VIIRS', n_months: 4 },
+    coverage: { first_month: '2021-03', last_month: '2021-06' },
     data_through: '2021-06-30',
     aoi_requested: { min_lat: 10, max_lat: 15, min_lon: 70, max_lon: 75 },
     aoi_analyzed: { min_lat: 10, max_lat: 15, min_lon: 70, max_lon: 75 },

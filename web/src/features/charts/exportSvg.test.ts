@@ -39,9 +39,6 @@ const mockResponse: CalendarApiResponse = {
     coverage: {
       first_month: '2020-01',
       last_month: '2020-02',
-      first_satellite: 'VIIRS',
-      last_satellite: 'VIIRS',
-      n_months: 2,
     },
     data_through: '2020-02-28',
     aoi_requested: { min_lat: 10, max_lat: 15, min_lon: 70, max_lon: 75 },
