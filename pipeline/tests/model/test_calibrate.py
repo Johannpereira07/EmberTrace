@@ -216,3 +216,18 @@ def test_zero_pinning_prevents_false_floor():
     assert apply_log_line(np.array([0.0]), cal)[0] == 0.0
     # nonzero inputs still map positively (intercept only shifts the curve)
     assert apply_log_line(np.array([1.0]), cal)[0] > 0
+
+
+def test_calendar_zero_median_not_inf():
+    """Calendar month with 0 median produces NaN (blank in CSV), never inf or TypeError."""
+    from pipeline.model.calendar import calendar  # noqa: E402
+    cm = pd.DataFrame({
+        "month": ["2020-01", "2021-01", "2022-01", "2020-02", "2021-02", "2022-02"],
+        "harmonized_count": [0.0, 0.0, 5.0, 10.0, 20.0, 30.0],
+    })
+    mat, anom = calendar(cm)
+    assert mat.loc[2022, 1] == 5.0
+    assert pd.isna(anom.loc[2022, 1]), "zero-median month must produce NaN (blank), not inf"
+    assert not np.isinf(anom.to_numpy(dtype=float, na_value=0.0)).any()
+    assert anom.loc[2021, 2] == 1.0
+

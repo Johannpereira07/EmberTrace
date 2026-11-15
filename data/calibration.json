@@ -1,10 +1,11 @@
 {
   "aqua_to_viirs": {
-    "slope": 1.1171367133603853,
-    "intercept": 1.3160590125460023,
-    "bias_factor": 1.1808669327825307,
-    "pearson_r_log": 0.7612172082795213,
-    "ratio_y_to_x": 7.979116799260832,
+    "method": "ratio_of_totals",
+    "factor": 7.979116799260801,
+    "slope": null,
+    "intercept": null,
+    "pearson_r": 0.8898685433782689,
+    "ratio_y_to_x": 7.979116799260801,
     "n_cell_months": 175941,
     "n_months": 96,
     "window": [
@@ -13,11 +14,12 @@
     ]
   },
   "terra_to_aqua": {
-    "slope": 0.5271014584001527,
-    "intercept": 0.738198563678419,
-    "bias_factor": 2.5436562276720918,
-    "pearson_r_log": 0.4073014693515366,
-    "ratio_y_to_x": 2.7718383751139357,
+    "method": "ratio_of_totals",
+    "factor": 2.771838375113937,
+    "slope": null,
+    "intercept": null,
+    "pearson_r": 0.657710295119532,
+    "ratio_y_to_x": 2.771838375113937,
     "n_cell_months": 73696,
     "n_months": 113,
     "window": [
@@ -28,13 +30,17 @@
   "holdout_aqua_to_viirs": {
     "train_months": 67,
     "test_months": 29,
-    "monthly_total_corr": 0.9370056760466492,
-    "monthly_total_mean_abs_pct_error": 8.07755079633497
+    "method": "ratio_of_totals",
+    "monthly_total_corr": 0.9566398307569812,
+    "monthly_total_mean_abs_pct_error": 0.2767716333239173,
+    "mape_over_nonzero_actuals": 29
   },
   "holdout_terra_to_aqua": {
     "train_months": 79,
     "test_months": 34,
-    "monthly_total_corr": 0.8494041702629935,
-    "monthly_total_mean_abs_pct_error": 80.32376902069342
+    "method": "ratio_of_totals",
+    "monthly_total_corr": 0.8743631420763199,
+    "monthly_total_mean_abs_pct_error": 0.9703998676411366,
+    "mape_over_nonzero_actuals": 34
   }
 }
