@@ -40,7 +40,7 @@
 ### **Minute 1:45 – 2:30: The Success Test (Hero Result)**
 > *"Our success criterion for Challenge 15 is straightforward: **no visible jump at the sensor handovers in July 2002 and January 2012**.*
 >
-> *In our splice check, raw unharmonized data exhibits an artificial 118% jump in 2012 with an $R^2$ correlation of just 0.48. In EmberTrace, that discontinuity is completely removed, achieving an $R^2$ correlation of 0.992 across the overlap window. The transition across sensor eras is scientifically robust and visually seamless."*
+> *In our splice check on synthetic data, raw unharmonized data exhibits an artificial 118% jump in 2012. In EmberTrace, there is no visible step at either handover on synthetic data. The transition across sensor eras is scientifically robust and visually seamless."*
 
 ### **Minute 2:30 – 3:45: Live Product Demonstration**
 > *(Switch screen share to EmberTrace web app / Chart Playground)*
@@ -79,4 +79,7 @@
 
 ### **Q4: "Why did you restrict your calibration window to 2012–2019?"**
 > **Answer:** *"In 2021 and 2022, NASA ceased orbit maintenance maneuvers for Aqua and Terra, causing their orbits to drift and overpass times to shift. Calibrating on post-2020 data would introduce orbital drift noise. Restricting calibration to 2012–2019 guarantees a clean, stable solar geometry comparison."*
+
+### **Q5: "Can this export be cited in a paper?"**
+> **Answer:** *"No. The exports are labeled demonstration data and are not for citation. All visual and tabular exports carry the demonstration watermark, as they are produced from synthetic development fixtures and sample datasets. Full scientific citation requires the complete pipeline to be run and validated across global archive records."*
 

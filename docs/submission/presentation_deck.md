@@ -81,13 +81,13 @@
 
 | Metric | Raw Unharmonized Series | EmberTrace Harmonized Record |
 |---|---|---|
-| **Step Discontinuity at 2012** | **+118% artificial jump** | **< 2% variation (continuous)** |
-| **Splice Check Correlation ($R^2$)** | 0.48 (broken baseline) | **0.992** across overlap window |
+| **Handover Transition at 2012** | **+118% artificial jump** | **No visible step at either handover on synthetic data** |
+| **Splice Check on Synthetic Data ($R^2$)** | 0.48 (broken baseline) | **0.992** on synthetic overlap |
 | **Outage Normalization** | Ignored (false quiet days) | Explicit satellite-day weight reduction |
 | **Post-2012 Sensor Blending** | Mixed sensitivities (invalid) | **Zero blending**; pure VIIRS equivalent |
 
 > **Speaker Note (2:15 – 3:00):**  
-> *"Here is our core success test. On the left, raw data shows a severe 118% jump in 2012 that completely distorts multi-decadal trends. On the right, EmberTrace’s splice verification confirms zero artificial discontinuity across both July 2002 and January 2012 handovers. We never blend or average sensors after 2012—VIIRS alone sets the gold standard, and historical MODIS data is calibrated into VIIRS equivalence."*
+> *"Here is our core success test. On the left, raw data shows a severe 118% jump in 2012 that completely distorts multi-decadal trends. On the right, EmberTrace confirms no visible step at either handover on synthetic data. We never blend or average sensors after 2012—VIIRS alone sets the gold standard, and historical MODIS data is calibrated into VIIRS equivalence."*
 
 ---
 
@@ -137,7 +137,7 @@
 ### **Honest Science & Future Roadmap**
 
 - **Full Transparency & Limitations:**
-  - *Demonstration Labeling:* Initial validation conducted on synthetic datasets + one-day regional samples; real archive processing run on India regional data (18M detections).
+  - *Demonstration Labeling:* Initial validation conducted on synthetic datasets + one-day regional samples; real archive processing run on India regional data (18M detections). All exports are labeled demonstration data and are not for citation.
   - *Terra Chained Uncertainty:* Nov 2000 – Jun 2002 carries higher uncertainty due to morning-to-afternoon two-step conversion.
   - *NRT Residual Masking:* Our static-source filter eliminates up to 70% of false industrial detections during monsoon months, leaving a residual error of $\pm 4\%$.
 - **Roadmap:**
@@ -146,5 +146,12 @@
   - Daily harmonized index to allow same-day comparison of partial months.
 
 > **Speaker Note (4:25 – 5:00):**  
-> *"In the spirit of open science, we believe in radical transparency. We explicitly label all demonstration data, provide interactive warnings on the higher uncertainty of the 2000–2002 Terra segment, and report the residual error of our industrial flare masking. EmberTrace bridges 26 years of NASA Earth observations into one seamless, trustworthy view. Thank you, and we welcome your questions!"*
+> *"In the spirit of open science, we believe in radical transparency. We explicitly label all demonstration data—our exports are labeled demonstration data and are not for citation. We provide interactive warnings on the higher uncertainty of the 2000–2002 Terra segment, and report the residual error of our industrial flare masking. EmberTrace bridges 26 years of NASA Earth observations into one seamless, trustworthy view. Thank you, and we welcome your questions!"*
+
+---
+
+## Slide 7 Appendix: Key Questions & Answers
+
+### **Q: Can this export be cited in a paper?**
+> **Answer:** *"No. The exports are labeled demonstration data and are not for citation. They demonstrate the harmonization workflow and interface on synthetic and sample datasets, but production scientific citations require the fully validated pipeline run on complete global records."*
 

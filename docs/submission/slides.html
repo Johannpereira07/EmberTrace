@@ -333,13 +333,13 @@
         </div>
         <div class="card">
           <div class="highlight-stat" style="color: var(--success);">&lt; 2%</div>
-          <div class="stat-label">EmberTrace Discontinuity (Splice Test PASS)</div>
-          <p style="margin-top: 8px;">Harmonized series passes splice checks at Jul 2002 and Jan 2012 with R² = 0.992. Completely seamless multi-decade baseline.</p>
+          <div class="stat-label">EmberTrace Handover Check</div>
+          <p style="margin-top: 8px;">No visible step at either handover on synthetic data (Jul 2002 and Jan 2012). Seamless multi-decade baseline.</p>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">✅ Validated Splice Points</div>
+        <div class="card-title">✅ Handover Checks on Synthetic Data</div>
         <div class="grid-3" style="text-align: center;">
           <div><strong style="color: #a855f7;">Jul 2002</strong><br><span style="font-size: 12px; color: var(--text-muted);">Terra-chained → Aqua-calibrated</span></div>
           <div><strong style="color: #38bdf8;">Jan 2012</strong><br><span style="font-size: 12px; color: var(--text-muted);">Aqua-calibrated → VIIRS native</span></div>
@@ -425,7 +425,7 @@
         <div class="card">
           <div class="card-title">🔍 Honest Limitations Disclosed</div>
           <ul>
-            <li><strong>Demonstration Data:</strong> Architecture proven on synthetic fixtures and India regional archive data (18M detections). Full global archive pending.</li>
+            <li><strong>Demonstration Data:</strong> Architecture proven on synthetic fixtures and India regional archive data (18M detections). All exports are labeled demonstration data and are not for citation.</li>
             <li><strong>Terra Chained Uncertainty:</strong> Nov 2000 – Jun 2002 carries higher uncertainty due to morning-afternoon chaining; clearly labeled with interactive notice.</li>
             <li><strong>Static Flare Masking:</strong> Industrial flare mask reduces NRT error to ±4%.</li>
           </ul>
@@ -476,10 +476,10 @@
       1: "Good afternoon everyone. For over a quarter of a century, NASA satellites have monitored Earth's fires from orbit. But if you try to analyze fire trends from 2000 to 2026 today, you run into a fundamental roadblock: the data is split across different satellite sensors with different resolutions and sensitivities. Today, we are proud to introduce EmberTrace—a platform that harmonizes 26 years of NASA FIRMS active fire hotspots into one unified, VIIRS-equivalent record where nobody can tell which satellite observed which year.",
       2: "Why can't you just plot FIRMS data over time? Because raw satellite counts are not ground truth. When VIIRS launched in 2012, fire detections suddenly doubled—not because the world was burning more, but because VIIRS pixels are 375 meters across compared to MODIS's 1 kilometer. Furthermore, the number of satellites in orbit fluctuated from one in 2000 to five in 2023. Raw counts create artificial jumps that mislead firefighters, forest managers, and climate researchers.",
       3: "To solve this, our team engineered an end-to-end, 7-stage pipeline. We grid detections to 0.25-degree cells, filter non-vegetation sources using a custom NRT static-source mask, and normalize by the exact number of active satellites observing each month—accounting for known NASA sensor outages. To calibrate, we match Aqua and VIIRS on their shared afternoon overpasses between 2012 and 2019, before orbit drift occurred. And because log-scale regressions systematically underestimate totals, we incorporate a bias factor correction to ensure total energy and count parity across handovers.",
-      4: "Here is our core success test. On the left, raw data shows a severe 118% jump in 2012 that completely distorts multi-decadal trends. On the right, EmberTrace’s splice verification confirms zero artificial discontinuity across both July 2002 and January 2012 handovers. We never blend or average sensors after 2012—VIIRS alone sets the gold standard, and historical MODIS data is calibrated into VIIRS equivalence.",
+      4: "Here is our core success test. On the left, raw data shows a severe 118% jump in 2012 that completely distorts multi-decadal trends. On the right, EmberTrace confirms no visible step at either handover on synthetic data. We never blend or average sensors after 2012—VIIRS alone sets the gold standard, and historical MODIS data is calibrated into VIIRS equivalence.",
       5: "This science powers our web application. Users can select any region on an interactive map or enter bounding coordinates. The interface instantly generates two synchronized calendars: the Burning Activity Heatmap and the Anomaly Calendar. We enforce strict remote sensing data rules: true zero fires are rendered as hollow cells, never confused with missing satellite data. The anomaly view compares each month to its historical median, immediately identifying whether a fire season is normal, suppressed, or extreme.",
       6: "EmberTrace directly answers the critical questions of three distinct groups: Emergency planners get instant anomaly metrics telling them if this season is dangerous compared to history. Land managers can track how burning seasons have shifted over a quarter-century. And climate scientists receive clean, reproducible, VIIRS-equivalent CSVs with complete metadata and data provenance.",
-      7: "In the spirit of open science, we believe in radical transparency. We explicitly label all demonstration data, provide interactive warnings on the higher uncertainty of the 2000–2002 Terra segment, and report the residual error of our industrial flare masking. EmberTrace bridges 26 years of NASA Earth observations into one seamless, trustworthy view. Thank you, and we welcome your questions!"
+      7: "In the spirit of open science, we believe in radical transparency. We explicitly label all demonstration data—our exports are labeled demonstration data and are not for citation. We provide interactive warnings on the higher uncertainty of the 2000–2002 Terra segment, and report the residual error of our industrial flare masking. EmberTrace bridges 26 years of NASA Earth observations into one seamless, trustworthy view. Thank you, and we welcome your questions!"
     };
 
     let currentSlide = 1;
