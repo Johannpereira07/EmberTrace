@@ -4,6 +4,13 @@ import pandas as pd
 
 def calendar(cm):
     s = cm.groupby("month")["harmonized_count"].sum(min_count=1).dropna()
-    cal = pd.DataFrame({"year": s.index.year, "m": s.index.month, "v": s.values})
+    months = s.index
+    if months.dtype == object:
+        months = pd.PeriodIndex(months, freq="M")
+    cal = pd.DataFrame({"year": months.year, "m": months.month, "v": s.values})
     mat = cal.pivot(index="year", columns="m", values="v").round(1)
-    return mat, (mat / mat.median(axis=0)).round(2)
+    med = mat.median(axis=0)
+    # Zero median -> not_defined (blank), never inf/NaN (AGENTS.md invariant).
+    med = med.replace(0, pd.NA)
+    anom = (mat.div(med, axis=1)).round(2)
+    return mat, anom

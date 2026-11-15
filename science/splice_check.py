@@ -70,24 +70,26 @@ def excluded_months(meta):
     return out
 
 
-def as_viirs_equiv(cm, source, cal):
+def as_viirs_equiv(cm, source, cal, apply_fn=None):
     """Each source's value in VIIRS-equivalent, using the pipeline's own conversions."""
+    if apply_fn is None:
+        apply_fn = apply_log_line
     a2v, t2a = cal.get("aqua_to_viirs"), cal.get("terra_to_aqua")
     if source == "VIIRS":
         return cm["viirs_count_norm"]
     if source == "AQUA_calibrated":
-        return apply_log_line(cm["aqua_count_norm"], a2v) if a2v else None
+        return apply_fn(cm["aqua_count_norm"], a2v) if a2v else None
     if source == "TERRA_chained":
-        return apply_log_line(apply_log_line(cm["terra_count_norm"], t2a), a2v) if (a2v and t2a) else None
+        return apply_fn(apply_fn(cm["terra_count_norm"], t2a), a2v) if (a2v and t2a) else None
     raise ValueError(source)
 
 
-def check_source_handover(cm, cal, h, skip, window, tol):
+def check_source_handover(cm, cal, h, skip, window, tol, apply_fn=None):
     h = pd.Period(h, "M")
     old, new = PAIRS[str(h)]
     months = [m for m in pd.period_range(h, h + window - 1, freq="M") if m not in skip]
     w = cm[cm["_m"].isin(months)]
-    a, b = as_viirs_equiv(w, old, cal), as_viirs_equiv(w, new, cal)
+    a, b = as_viirs_equiv(w, old, cal, apply_fn), as_viirs_equiv(w, new, cal, apply_fn)
     if a is None or b is None or w.empty:
         return {"handover": str(h), "result": "SKIP", "why": "conversion missing or no months"}
     both = a.notna() & b.notna()
