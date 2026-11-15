@@ -1,24 +1,32 @@
 # Real-Data Calibration & Go/No-Go Report (CAL-2 to CAL-9)
 
-**Date:** 15 Nov 2026 · **Owner:** Person 2 (Calibration & Data Engineer) · **Pipeline Version:** `0.2-ratio-of-totals`
-**Verdict:** **GO WITH REAL DATA, stating the limitations below.**
+**Date:** 15 Nov 2026 · **Owner:** Person 2 (Calibration & Data Engineer) · **Pipeline Version:** `0.3-monthly-ratio`
+**Verdict:** **GO WITH REAL DATA, using calendar-month ratio calibration (Jun–Sep pooled) as default and stating the limitations below.**
 
 ---
 
 ## 1. Executive Summary & Go/No-Go Decision
 
 1. **Zero-to-positive floor eliminated (`CAL-2` / `CAL-3`):**
-   - Replaced the unpinned `log1p` intercept regression (`0.1-calibration-pending`, which turned `0` detections into `3.22` for Aqua and `18.26` for chained Terra) with **Option C (`ratio_of_totals`)**: a pure multiplicative overlap factor (`factor = sum(y) / sum(x)`), with `0 * factor = 0.0` and `NaN` preserved as `NaN`.
+   - Replaced the unpinned `log1p` intercept regression (`0.1-calibration-pending`, which turned `0` detections into `3.22` for Aqua and `18.26` for chained Terra) with **calendar-month ratio calibration (`monthly_ratio`, with monsoon months Jun–Sep pooled into one shared bucket)**, keeping `0 * factor_m = 0.0` and `NaN` preserved as `NaN`.
    - Verified on `data/cell_month.parquet` (`1,455,763` rows, `4,651` cells × `313` months): all `84,569` quiet `TERRA_chained` cell-months and `473,664` quiet `AQUA_calibrated` cell-months have `harmonized_count = 0.0`.
-   - Verified on `make synthetic`: all ingest and stage 5–7 truth checks pass (`TERRA_chained` harmonized/true = `0.993`, `AQUA_calibrated` = `1.008`, `VIIRS` = `0.998`, quiet cells = `0.00`).
-2. **Aqua → VIIRS (`2012-01..2019-12`) is strong:**
-   - Full-window factor: **`7.9791`** (`175,941` non-empty cell-months across `96` months, cell-level `r = 0.890`).
-   - 70/30 Hold-out (`train 2012-01..2017-07` factor `8.0046`, `test 2017-08..2019-12`, `29` months): **monthly-total `r = 0.957`**, **median absolute % error = `19.8%`**, unweighted MAPE = `27.7%` (fraction `0.2768`), `mean(pred/actual) = 0.939`.
+   - Verified on `make synthetic` and unit tests (`63 passed`): all ingest and stage 5–7 truth checks pass, including tests verifying that zero stays zero, factors are selected by calendar month, and pooled monsoon months (`6, 7, 8, 9`) share one identical factor.
+2. **Hold-out comparison: Single factor (`ratio_of_totals`) vs Calendar-month factors (`monthly_ratio`, Jun–Sep pooled):**
+
+| Pair | Method | Train | Test | Hold-Out `corr` | Hold-Out `MAPE` | **Median Abs % Error** | `mean(pred/actual)` |
+|---|---|---|---|---|---|---|---|
+| **Aqua → VIIRS** | Single factor (`ratio_of_totals`, `8.005`) | `2012-01..2017-07` | `2017-08..2019-12` | `0.9566` | `27.7%` | **`19.8%`** | `0.939` |
+| **Aqua → VIIRS** | **Calendar-month (`monthly_ratio`, Jun–Sep pooled)** | `2012-01..2017-07` | `2017-08..2019-12` | **`0.9958`** | **`23.3%`** | **`8.7%`** | **`1.168`** |
+| **Terra → Aqua** | Single factor (`ratio_of_totals`, `2.831`) | `2002-08..2009-02` | `2009-03..2011-12` | `0.8744` | `97.0%` | **`68.0%`** | `1.764` |
+| **Terra → Aqua** | **Calendar-month (`monthly_ratio`, Jun–Sep pooled)** | `2002-08..2009-02` | `2009-03..2011-12` | **`0.9726`** | **`27.6%`** | **`24.1%`** | **`1.096`** |
+
+   - **Full-window (`2012-01..2019-12`) Aqua → VIIRS factors:** global `factor = 7.9791`; monthly factors (`6..9` pooled): `m1=8.39, m2=8.39, m3=7.43, m4=10.03, m5=12.26, m6..9=16.67, m10=5.02, m11=6.27, m12=8.74`.
+   - **Full-window (`2002-08..2011-12`) Terra → Aqua factors:** global `factor = 2.7718`; monthly factors (`6..9` pooled): `m1=2.19, m2=2.50, m3=3.55, m4=2.15, m5=1.03, m6..9=1.26, m10=4.15, m11=6.46, m12=1.96`.
 3. **Both sensor handovers pass the deseasonalized splice check (`science/splice_placebo.py`):**
-   - Comparing the 12-month sum after vs 12-month sum before across `217` interior placebo months (`mean = 1.0534`, `std = 0.2703`):
-     - **`2002-07` (`TERRA_chained` → `AQUA_calibrated`):** ratio `×0.890` (**`−0.60σ`**) — within normal year-to-year variability (`splice_check.py` overlap step = **`×0.95` PASS**).
-     - **`2012-01` (`AQUA_calibrated` → `VIIRS`):** ratio `×1.226` (**`+0.64σ`**) — within normal variability (`splice_check.py` overlap step = `×0.94`, reflecting 2012's annual ratio `7.465` being 6.4% below the 8-year average `7.979`).
-     - **`2023-03` (`NOAA-21` joins):** ratio `×0.784` (**`−1.00σ`**).
+   - Comparing the 12-month sum after vs 12-month sum before across `217` interior placebo months (`mean = 1.0501`, `std = 0.2649`, `min = 0.6451`, `max = 2.0450`):
+     - **`2002-07` (`TERRA_chained` → `AQUA_calibrated`):** `309,138` → `310,320`, ratio **`×1.004`** (**`−0.17σ`**) — virtually zero step at the handover!
+     - **`2012-01` (`AQUA_calibrated` → `VIIRS`):** `367,356` → `464,257`, ratio **`×1.264`** (**`+0.81σ`**) — well within normal year-to-year variability (`splice_check.py` overlap step = `×0.94`, reflecting 2012's annual ratio `7.465` being 6.4% below the 8-year average `7.979`).
+     - **`2023-03` (`NOAA-21` joins):** `478,402` → `375,117`, ratio **`×0.784`** (**`−1.00σ`**).
 4. **VIIRS multi-satellite normalization verified:**
    - Stage 4 (`pipeline/ingest/aggregate.py`) divides combined VIIRS detections (`S-NPP + NOAA-20 + NOAA-21`) by the active satellite weight (`platform_weight`), so `viirs_count_norm` does **not** double in `2018-04` or jump `1.5×` in `2023-03`.
    - Across `2018–2025`, `viirs_count_norm` matches an `S-NPP`-only normalized series within **`0.1%–1.5%`**, and refitting Aqua → VIIRS on `S-NPP` alone changes the factor by only **`0.045%`** (`7.9755` vs `7.9791`). Keeping the combined series is required because `S-NPP` ended on `2026-11-02`.
@@ -89,13 +97,13 @@
 Command: `python science/splice_placebo.py --run out`
 
 - **Statistic:** $R(m) = \sum_{k=0}^{11} T_{m+k} / \sum_{k=1}^{12} T_{m-k}$ on the harmonized monthly total $T$.
-- **Placebo distribution (`217` interior months avoiding handovers and provisional/partial months):** `mean = 1.0534`, **`std = 0.2703`**, `min = 0.6526`, `max = 2.0450`.
+- **Placebo distribution (`217` interior months avoiding handovers and provisional/partial months):** `mean = 1.0501`, **`std = 0.2649`**, `min = 0.6451`, `max = 2.0450`.
 
-| Handover | 12m Before | 12m After | Ratio (`after / before`) | z-score vs Placebo | Overlap Check (`splice_check.py`) |
-|---|---|---|---|---|---|
-| **`2002-07`** (`TERRA_chained` → `AQUA_calibrated`) | 337,479 | 300,369 | **`×0.890`** | **`−0.60σ`** | **`×0.95` PASS** |
-| **`2012-01`** (`AQUA_calibrated` → `VIIRS`) | 378,633 | 464,257 | **`×1.226`** | **`+0.64σ`** | `×0.94` (2012 ratio 6.4% below 8-yr mean) |
-| **`2023-03`** (`NOAA-21` joins) | 478,402 | 375,117 | **`×0.784`** | **`−1.00σ`** | `×1.56` |
+| Handover | 12m Before | 12m After | Ratio (`after / before`) | z-score (`monthly_ratio`) | z-score (Single `ratio_of_totals`) | Overlap Check (`splice_check.py`) |
+|---|---|---|---|---|---|---|
+| **`2002-07`** (`TERRA_chained` → `AQUA_calibrated`) | 309,138 | 310,320 | **`×1.004`** | **`−0.17σ`** | `−0.60σ` | `×1.09` (`×0.95` single) |
+| **`2012-01`** (`AQUA_calibrated` → `VIIRS`) | 367,356 | 464,257 | **`×1.264`** | **`+0.81σ`** | `+0.64σ` | `×0.94` (2012 ratio 6.4% below 8-yr mean) |
+| **`2023-03`** (`NOAA-21` joins) | 478,402 | 375,117 | **`×0.784`** | **`−1.00σ`** | `−1.00σ` | `×1.56` |
 
 ---
 

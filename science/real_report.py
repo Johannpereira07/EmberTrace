@@ -42,7 +42,8 @@ def plot_overlap(tot_all: pd.DataFrame, split_month: pd.Period, title: str, fact
     dates = pd.to_datetime(tot_all.index.astype(str) + "-01")
     fig, ax = plt.subplots(figsize=(11, 4.5), dpi=110)
     ax.plot(dates, tot_all["actual"] / 1e3, color="#0072B2", lw=2.0, label="Actual target monthly total")
-    ax.plot(dates, tot_all["pred"] / 1e3, color="#D55E00", lw=1.8, ls="--", label=f"Predicted (×{factor:.3f})")
+    ax.plot(dates, tot_all["pred_single"] / 1e3, color="#888888", lw=1.4, ls=":", label=f"Single factor (×{factor:.2f})")
+    ax.plot(dates, tot_all["pred_monthly"] / 1e3, color="#D55E00", lw=1.8, ls="--", label="Monthly factors (Jun-Sep pooled)")
     split_ts = pd.Timestamp(str(split_month) + "-01")
     ax.axvline(split_ts, color="#333333", ls=":", lw=1.2, label=f"70/30 Hold-out split ({split_month})")
     ax.set_title(f"{title} Overlap Fit & Hold-Out ({tot_all.index[0]} to {tot_all.index[-1]})", fontsize=12, fontweight="bold")
@@ -50,7 +51,7 @@ def plot_overlap(tot_all: pd.DataFrame, split_month: pd.Period, title: str, fact
     ax.xaxis.set_major_locator(mdates.YearLocator(1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     ax.grid(True, ls=":", alpha=0.45)
-    ax.legend(loc="upper left", fontsize=9)
+    ax.legend(loc="upper left", fontsize=8.5)
     fig.tight_layout()
     fig.savefig(out_png, dpi=110)
     plt.close(fig)
@@ -107,17 +108,22 @@ def main():
           f"- **Data kind:** `{meta.get('data_kind')}` · **Data through:** `{meta.get('data_through')}` · **Provisional from:** `{meta.get('provisional_from')}`\n"]
 
     yr_rows = []
+    comp_rows = []
     for name, x, y, win, label in PAIRS:
         both = cm.dropna(subset=[x, y]).copy()
         both = both[(both["_m"] >= pd.Period(win[0], "M")) & (both["_m"] <= pd.Period(win[1], "M"))]
         months = sorted(both["_m"].unique())
         k = int(len(months) * 0.7)
-        cal_full = fit_log_line(cm.assign(month=cm["_m"]), x, y, win)
-        cal_train = fit_log_line(cm.assign(month=cm["_m"]), x, y, (str(months[0]), str(months[k - 1])))
+        cm_m = cm.assign(month=cm["_m"])
+        cal_full_s = fit_log_line(cm_m, x, y, win, method="ratio_of_totals")
+        cal_full_m = fit_log_line(cm_m, x, y, win, method="monthly_ratio")
+        cal_tr_s = fit_log_line(cm_m, x, y, (str(months[0]), str(months[k - 1])), method="ratio_of_totals")
+        cal_tr_m = fit_log_line(cm_m, x, y, (str(months[0]), str(months[k - 1])), method="monthly_ratio")
 
-        both["pred_full"] = apply_log_line(both[x], cal_full)
-        tot_all = both.groupby("_m")[[y, "pred_full"]].sum().rename(columns={y: "actual", "pred_full": "pred"})
-        plot_overlap(tot_all, months[k], label, cal_full["factor"], out_dir / f"overlap_{name}.png")
+        both["pred_single"] = apply_log_line(both[x], cal_full_s, months=both["_m"])
+        both["pred_monthly"] = apply_log_line(both[x], cal_full_m, months=both["_m"])
+        tot_all = both.groupby("_m")[[y, "pred_single", "pred_monthly"]].sum().rename(columns={y: "actual"})
+        plot_overlap(tot_all, months[k], label, cal_full_s["factor"], out_dir / f"overlap_{name}.png")
 
         # Yearly ratio table
         by_yr = both.assign(year=both["_m"].dt.year).groupby("year")[[x, y]].sum()
@@ -126,29 +132,50 @@ def main():
             yr_rows.append({"pair": name, "year": int(yr_val), "source_sum": round(float(r[x]), 1),
                             "target_sum": round(float(r[y]), 1), "ratio_target_over_source": round(float(r["ratio"]), 4)})
 
-        # Hold-out table
+        # Hold-out table (both single and monthly factors)
         test = both[both["_m"].isin(months[k:])].copy()
-        test["pred"] = apply_log_line(test[x], cal_train)
-        tot = test.groupby("_m")[[y, "pred"]].sum().rename(columns={y: "actual"})
-        tot["abs_pct_err"] = (tot["pred"] - tot["actual"]).abs() / tot["actual"] * 100.0
-        tot["pred_over_actual"] = tot["pred"] / tot["actual"]
+        test["pred_single"] = apply_log_line(test[x], cal_tr_s, months=test["_m"])
+        test["pred_monthly"] = apply_log_line(test[x], cal_tr_m, months=test["_m"])
+        tot = test.groupby("_m")[[y, "pred_single", "pred_monthly"]].sum().rename(columns={y: "actual"})
+        tot["err_pct_single"] = (tot["pred_single"] - tot["actual"]).abs() / tot["actual"] * 100.0
+        tot["ratio_single"] = tot["pred_single"] / tot["actual"]
+        tot["err_pct_monthly"] = (tot["pred_monthly"] - tot["actual"]).abs() / tot["actual"] * 100.0
+        tot["ratio_monthly"] = tot["pred_monthly"] / tot["actual"]
         tot.index = tot.index.astype(str)
         tot.round(3).to_csv(out_dir / f"holdout_{name}.csv")
 
-        mape = float(tot["abs_pct_err"].mean())
-        med_err = float(tot["abs_pct_err"].median())
-        mean_bias = float(tot["pred_over_actual"].mean())
-        corr = float(tot["actual"].corr(tot["pred"]))
+        for m_label, p_col, e_col, r_col in [
+            ("Single factor (`ratio_of_totals`)", "pred_single", "err_pct_single", "ratio_single"),
+            ("Calendar-month (`monthly_ratio`, Jun-Sep pooled)", "pred_monthly", "err_pct_monthly", "ratio_monthly"),
+        ]:
+            comp_rows.append({
+                "pair": label,
+                "method": m_label,
+                "train_window": f"{months[0]}..{months[k-1]}",
+                "test_window": f"{months[k]}..{months[-1]}",
+                "corr": float(tot["actual"].corr(tot[p_col])),
+                "mape_pct": float(tot[e_col].mean()),
+                "median_err_pct": float(tot[e_col].median()),
+                "mean_pred_over_actual": float(tot[r_col].mean()),
+            })
 
+        mf_str = ", ".join(f"m{m}={cal_full_m['monthly_factors'][str(m)]:.2f}" for m in [1, 2, 3, 4, 5, 6, 10, 11, 12])
         md.append(f"## {label} (`{win[0]}..{win[1]}`)")
-        md.append(f"- **Full-window factor:** `{cal_full['factor']:.4f}` · **Train (`{months[0]}..{months[k-1]}`) factor:** `{cal_train['factor']:.4f}`")
-        md.append(f"- **Hold-out (`{months[k]}..{months[-1]}`, {len(tot)} months):** corr = `{corr:.3f}`, MAPE = `{mape:.1f}%` (fraction `{mape/100:.4f}`), **median abs % error = `{med_err:.1f}%`**, **mean(pred/actual) = `{mean_bias:.3f}`**\n")
+        md.append(f"- **Full-window global factor:** `{cal_full_s['factor']:.4f}` · **Train (`{months[0]}..{months[k-1]}`) global factor:** `{cal_tr_s['factor']:.4f}`")
+        md.append(f"- **Full-window monthly factors (`m6` = Jun–Sep pooled):** {mf_str}\n")
         md.append("### Yearly Overlap Ratios (`sum target / sum source`)")
         md.append("| Year | Source Sum | Target Sum | Ratio |")
         md.append("|---|---|---|---|")
         for yr_val, r in by_yr.iterrows():
             md.append(f"| {yr_val} | {r[x]:,.1f} | {r[y]:,.1f} | {r['ratio']:.3f} |")
         md.append("")
+
+    md.insert(2, "## Hold-Out Comparison: Single Factor vs Calendar-Month Factors (Jun–Sep Pooled)\n")
+    md.insert(3, "| Pair | Method | Train | Test | Hold-Out `corr` | Hold-Out `MAPE` | **Median Abs % Error** | `mean(pred/actual)` |")
+    md.insert(4, "|---|---|---|---|---|---|---|---|")
+    for idx, cr in enumerate(comp_rows):
+        md.insert(5 + idx, f"| **{cr['pair']}** | {cr['method']} | `{cr['train_window']}` | `{cr['test_window']}` | `{cr['corr']:.4f}` | `{cr['mape_pct']:.1f}%` | **`{cr['median_err_pct']:.1f}%`** | `{cr['mean_pred_over_actual']:.3f}` |")
+    md.insert(5 + len(comp_rows), "")
 
     pd.DataFrame(yr_rows).to_csv(out_dir / "yearly_ratios.csv", index=False)
 

@@ -18,11 +18,11 @@ Task IDs and "done when" are in `docs/03-implementation-plan.md` §5. Tick **you
 
 ## Person 2: Calibration & data (stages 5-7)
 - [x] CAL-1 H2 schemas + sample `cell_month.parquet` + `meta.json` (confirmed in `contracts/cell_month.schema.md` + `data/`)
-- [x] CAL-2 calibrate (Option C `ratio_of_totals` default, keeps 0 at 0; `docs/11-calibration-report.md`)
-- [x] CAL-3 harmonize (`0` detections stay `0.0`, `NaN` stays `NaN`; 60 pipeline tests pass)
-- [x] CAL-4 export (`data/cell_month.parquet` + `data/meta.json` + `data/calibration.json`, `0.2-ratio-of-totals`)
-- [x] CAL-5 splice check (`science/splice_check.py` + deseasonalized `science/splice_placebo.py`)
-- [ ] CAL-6 cell size check
+- [x] CAL-2 calibrate (calendar-month `monthly_ratio` with Jun–Sep pooled as default, keeps 0 at 0; `docs/11-calibration-report.md`)
+- [x] CAL-3 harmonize (`0` detections stay `0.0`, `NaN` stays `NaN`; 63 pipeline tests pass)
+- [x] CAL-4 export (`data/cell_month.parquet` + `data/meta.json` + `data/calibration.json`, `0.3-monthly-ratio`)
+- [x] CAL-5 splice check (`science/splice_check.py` + deseasonalized `science/splice_placebo.py`: `-0.17σ` at `2002-07`, `+0.81σ` at `2012-01`)
+- [x] CAL-6 cell size check (`0.25°` confirmed in `meta.json`: 4,651 cells, 2.3 MB Parquet, cell-level r=0.89; `0.5°` loses 4× spatial detail without needed memory savings)
 - [x] CAL-7 hero figure (`science/hero_figure.py` → `science/figures/hero.png`)
 - [x] CAL-8 real-data runbook (`science/real_report.py` → `out/real_report/`)
 - [x] CAL-9 run runbook, 12:00 go/no-go (GO with real data + limitations; `docs/11-calibration-report.md`)

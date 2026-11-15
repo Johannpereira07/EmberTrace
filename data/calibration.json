@@ -1,7 +1,27 @@
 {
   "aqua_to_viirs": {
-    "method": "ratio_of_totals",
+    "method": "monthly_ratio",
     "factor": 7.979116799260801,
+    "monthly_factors": {
+      "1": 8.3855246622683,
+      "2": 8.394998181665594,
+      "3": 7.430031186783547,
+      "4": 10.034321659799883,
+      "5": 12.256209692867634,
+      "6": 16.665430267062316,
+      "7": 16.665430267062316,
+      "8": 16.665430267062316,
+      "9": 16.665430267062316,
+      "10": 5.017908190349037,
+      "11": 6.269724582077282,
+      "12": 8.737348267167068
+    },
+    "pooled_months": [
+      6,
+      7,
+      8,
+      9
+    ],
     "slope": null,
     "intercept": null,
     "pearson_r": 0.8898685433782689,
@@ -14,8 +34,28 @@
     ]
   },
   "terra_to_aqua": {
-    "method": "ratio_of_totals",
+    "method": "monthly_ratio",
     "factor": 2.771838375113937,
+    "monthly_factors": {
+      "1": 2.1938895417156288,
+      "2": 2.5014720446826297,
+      "3": 3.5471456365965928,
+      "4": 2.1464844912782044,
+      "5": 1.0309952184131617,
+      "6": 1.2648939428746457,
+      "7": 1.2648939428746457,
+      "8": 1.2648939428746457,
+      "9": 1.2648939428746457,
+      "10": 4.146239554317549,
+      "11": 6.455897664733006,
+      "12": 1.9645243648405648
+    },
+    "pooled_months": [
+      6,
+      7,
+      8,
+      9
+    ],
     "slope": null,
     "intercept": null,
     "pearson_r": 0.657710295119532,
@@ -30,17 +70,21 @@
   "holdout_aqua_to_viirs": {
     "train_months": 67,
     "test_months": 29,
-    "method": "ratio_of_totals",
-    "monthly_total_corr": 0.9566398307569812,
-    "monthly_total_mean_abs_pct_error": 0.2767716333239173,
+    "method": "monthly_ratio",
+    "monthly_total_corr": 0.9957687214422885,
+    "monthly_total_mean_abs_pct_error": 0.2328785780985969,
+    "monthly_total_median_abs_pct_error": 0.08746461801878505,
+    "monthly_total_mean_pred_over_actual": 1.1681201094387275,
     "mape_over_nonzero_actuals": 29
   },
   "holdout_terra_to_aqua": {
     "train_months": 79,
     "test_months": 34,
-    "method": "ratio_of_totals",
-    "monthly_total_corr": 0.8743631420763199,
-    "monthly_total_mean_abs_pct_error": 0.9703998676411366,
+    "method": "monthly_ratio",
+    "monthly_total_corr": 0.972562266393052,
+    "monthly_total_mean_abs_pct_error": 0.27627616572473773,
+    "monthly_total_median_abs_pct_error": 0.24103266078708885,
+    "monthly_total_mean_pred_over_actual": 1.096139169599449,
     "mape_over_nonzero_actuals": 34
   }
 }

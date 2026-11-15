@@ -85,9 +85,9 @@ def build_hero(run_dir: Path, out_path: Path) -> None:
     # --- Right panel: Harmonized series (same axes) ---
     ax2.plot(dates, harm_1m, color=C_HARM, alpha=0.22, lw=0.9, label="Harmonized monthly total (VIIRS-eq.)")
     ax2.plot(dates, harm_12m, color=C_HARM, lw=2.6, label="Harmonized 12-month rolling sum (VIIRS-eq.)")
-    ax2.set_title("After: Harmonized VIIRS-Equivalent Series (Option C Ratio-of-Totals)", fontsize=13, fontweight="bold", pad=10)
+    ax2.set_title("After: Harmonized VIIRS-Equivalent Series (Monthly Ratio, Jun–Sep Pooled)", fontsize=13, fontweight="bold", pad=10)
 
-    ax2.annotate("2002-07 handover: −0.60σ\n2012-01 handover: +0.64σ\n(within natural variability, zero floor = 0)",
+    ax2.annotate("2002-07 handover: −0.17σ\n2012-01 handover: +0.81σ\n(within natural variability, zero floor = 0)",
                  xy=(pd.Timestamp("2012-01-01"), 464), xytext=(pd.Timestamp("2003-06-01"), 1120),
                  arrowprops=dict(arrowstyle="->", color=C_LINE, lw=1.0),
                  fontsize=9.5, bbox=dict(boxstyle="round,pad=0.3", fc="#EEFAF4", ec=C_HARM, alpha=0.9))
