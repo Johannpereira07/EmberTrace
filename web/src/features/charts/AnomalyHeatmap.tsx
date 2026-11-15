@@ -62,6 +62,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
     const gridHeight = LEGEND_TOP + LEGEND_SECTION_HEIGHT + METADATA_SECTION_HEIGHT;
 
     const range = data ? getMonthRange(data) : null;
+    const recordStart = model.meta?.coverage?.first_month || range?.first || '';
     const dateRangeStr = range ? `${formatMonthLabel(range.first)} – ${formatMonthLabel(range.last)}` : '';
     const aoi = model.meta?.aoi_analyzed;
     const aoiStr = aoi
@@ -194,7 +195,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                 {row.cells.map((cell, cIdx) => {
                   const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
                   const isSelected = isSelectedYear && selectedMonth === cell.month;
-                  const isBeforeStart = cell.monthStr < '2000-11';
+                  const isBeforeStart = Boolean(recordStart && cell.monthStr < recordStart);
                   const isTrulyOutOfRange = cell.isOutOfRange && !isBeforeStart;
                   const isUnavailable = !isTrulyOutOfRange && (cell.state === 'unavailable' || cell.value === null || isBeforeStart);
                   const isZeroDetection = !isTrulyOutOfRange && !isUnavailable && (cell.isZero || cell.value === 0);
