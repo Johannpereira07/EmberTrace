@@ -34,7 +34,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from pipeline.ingest.satellites import CONFIG  # noqa: E402
-from pipeline.model.calibrate import apply_log_line  # noqa: E402
+from pipeline.model.calibrate import _call_apply, apply_log_line  # noqa: E402
 
 SPLICE = CONFIG["splice_check"]
 PAIRS = {  # handover -> (old source, new source), each as a function of the cell_month frame
@@ -74,13 +74,15 @@ def as_viirs_equiv(cm, source, cal, apply_fn=None):
     """Each source's value in VIIRS-equivalent, using the pipeline's own conversions."""
     if apply_fn is None:
         apply_fn = apply_log_line
+    months = cm["month"] if "month" in cm.columns else None
     a2v, t2a = cal.get("aqua_to_viirs"), cal.get("terra_to_aqua")
     if source == "VIIRS":
         return cm["viirs_count_norm"]
     if source == "AQUA_calibrated":
-        return apply_fn(cm["aqua_count_norm"], a2v) if a2v else None
+        return _call_apply(apply_fn, cm["aqua_count_norm"], a2v, months) if a2v else None
     if source == "TERRA_chained":
-        return apply_fn(apply_fn(cm["terra_count_norm"], t2a), a2v) if (a2v and t2a) else None
+        return (_call_apply(apply_fn, _call_apply(apply_fn, cm["terra_count_norm"], t2a, months), a2v, months)
+                if (a2v and t2a) else None)
     raise ValueError(source)
 
 

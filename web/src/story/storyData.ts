@@ -14,8 +14,7 @@ export interface StoryYear {
   naive_raw: number; // raw detections of the month's source sensor, stitched end to end
   viirs_raw: number; // raw VIIRS detections, all VIIRS satellites together
   harmonized: number; // EmberTrace VIIRS-equivalent detections per satellite (pipeline output)
-  ratio_converted: number; // same, with MODIS years converted by the overlap ratio (keeps 0 at 0)
-  aqua_converted: number | null; // Aqua converted the same way, in VIIRS years only (the check)
+  aqua_converted: number | null; // Aqua converted with the pipeline's calibration, in VIIRS years only (the check)
   sources: Source[];
 }
 
@@ -25,8 +24,9 @@ export interface StoryData {
   coverage: { first_month: string; last_month: string };
   cell_size_deg: number;
   conversion: {
-    aqua_to_viirs: number;
-    terra_to_aqua: number;
+    method: string; // calibration method in data/calibration.json, e.g. "monthly_ratio"
+    aqua_to_viirs_range: [number, number]; // smallest and largest factor (equal for a single factor)
+    terra_to_aqua_range: [number, number];
     aqua_to_viirs_window: [string, string];
     terra_to_aqua_window: [string, string];
   };
@@ -62,6 +62,11 @@ export function formatCount(n: number): string {
   if (n >= 1e4) return `${Math.round(n / 1e3)}k`;
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
   return String(Math.round(n));
+}
+
+/** "7.43–16.67" for a range of factors, "7.98" when there is only one. */
+export function factorRange([lo, hi]: [number, number]): string {
+  return lo === hi ? lo.toFixed(2) : `${lo.toFixed(2)}–${hi.toFixed(2)}`;
 }
 
 export function yearOf(isoDate: string): number {
