@@ -97,14 +97,8 @@ export const GUIDE: Record<GuideTopic, GuideEntry> = {
   },
 };
 
-/** Tour order. Steps whose element is not on screen (e.g. before the calendar loads) are skipped. */
-export const TOUR_ORDER: GuideTopic[] = [
-  'map',
-  'regions',
-  'timeline',
-  'mode',
-  'calendar',
-  'flags',
-  'top',
-  'download',
-];
+/**
+ * Tour order: five steps, kept short for first-time visitors (and judges). The other sections are
+ * covered by their "What's this?" toggles. Steps whose element is not on screen are skipped.
+ */
+export const TOUR_ORDER: GuideTopic[] = ['map', 'calendar', 'mode', 'flags', 'download'];

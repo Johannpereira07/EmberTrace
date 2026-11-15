@@ -1,7 +1,8 @@
 /**
  * EmberTrace – optional guided tour of the explorer.
  * Steps point at elements marked `data-tour="<topic>"`; a step whose element is not on screen is skipped.
- * First visit: a small, dismissible prompt offers the tour. The header "Guide" button restarts it.
+ * It starts by itself on the first visit in a browser session: not again on refresh, but again after the
+ * tab or browser is closed (sessionStorage). The header "Guide" button restarts it.
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -23,15 +24,15 @@ function target(topic: GuideTopic): HTMLElement | null {
 
 function markSeen() {
   try {
-    window.localStorage.setItem(SEEN_KEY, '1');
+    window.sessionStorage.setItem(SEEN_KEY, '1');
   } catch {
-    /* private mode: the prompt may show again next visit */
+    /* storage blocked: the tour may start again on refresh */
   }
 }
 
 function wasSeen(): boolean {
   try {
-    return window.localStorage.getItem(SEEN_KEY) === '1';
+    return window.sessionStorage.getItem(SEEN_KEY) === '1';
   } catch {
     return false;
   }
@@ -42,23 +43,21 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
 export function TourProvider({ ready, children }: { ready: boolean; children: React.ReactNode }) {
   const [steps, setSteps] = useState<GuideTopic[] | null>(null);
   const [index, setIndex] = useState(0);
-  const [prompt, setPrompt] = useState(false);
   const returnFocus = useRef<HTMLElement | null>(null);
-
-  // Offer the tour once, after the first calendar has loaded (or failed), so its steps exist.
-  useEffect(() => {
-    if (ready && !wasSeen()) setPrompt(true);
-  }, [ready]);
 
   const start = useCallback(() => {
     const available = TOUR_ORDER.filter((t) => target(t));
     if (available.length === 0) return;
     returnFocus.current = document.activeElement as HTMLElement | null;
     markSeen();
-    setPrompt(false);
     setIndex(0);
     setSteps(available);
   }, []);
+
+  // Start once per browser session, after the first calendar has loaded (or failed), so its steps exist.
+  useEffect(() => {
+    if (ready && !wasSeen()) start();
+  }, [ready, start]);
 
   const close = useCallback(() => {
     setSteps(null);
@@ -68,15 +67,6 @@ export function TourProvider({ ready, children }: { ready: boolean; children: Re
   return (
     <TourContext.Provider value={{ start }}>
       {children}
-      {prompt && !steps && (
-        <TourPrompt
-          onStart={start}
-          onDismiss={() => {
-            markSeen();
-            setPrompt(false);
-          }}
-        />
-      )}
       {steps && <TourStep steps={steps} index={index} setIndex={setIndex} onClose={close} />}
     </TourContext.Provider>
   );
@@ -93,36 +83,6 @@ export function TourButton() {
     >
       Guide
     </button>
-  );
-}
-
-function TourPrompt({ onStart, onDismiss }: { onStart: () => void; onDismiss: () => void }) {
-  return (
-    <div
-      role="region"
-      aria-label="Tour offer"
-      className="fixed z-[2000] bottom-4 right-4 left-4 sm:left-auto sm:w-80 p-4 rounded-2xl bg-slate-900 border border-sky-500/40 shadow-2xl text-sm text-slate-200"
-    >
-      <p className="font-semibold text-white">New here?</p>
-      <p className="mt-1 text-slate-300 text-[13px]">A one-minute tour shows what each part of this page does.</p>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={onStart}
-          className="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs hover:bg-sky-400 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
-        >
-          Take the tour
-        </button>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
-        >
-          No thanks
-        </button>
-      </div>
-      <p className="mt-2 text-[11px] text-slate-500">You can open it later from "Guide" at the top.</p>
-    </div>
   );
 }
 
