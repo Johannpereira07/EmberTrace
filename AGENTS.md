@@ -118,7 +118,7 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 - No de-duplication when overlapping downloads contain the same detection.
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.
-- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. **Confirmed on the full India run (docs/09):** a cell with 0 detections becomes 3.22 (`AQUA_calibrated`) or 18.26 (`TERRA_chained`), a floor of ~15,000 / ~84,900 per month over 4,651 cells. The Jun to Jul 2002 change is ×0.18 (normal ×0.81 to 0.98), a large artificial step, and 46% of the pre-2012 total comes from cells with 0 detections. Fails the PRD success test. Needs a fix that keeps 0 at 0.
+- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3): **RESOLVED (`0.2-ratio-of-totals`, `docs/11-calibration-report.md`).** Replaced the unpinned `log1p` intercept fit with Option C (`ratio_of_totals`: `×7.98` Aqua→VIIRS, `×2.77` Terra→Aqua), keeping `0` detections at `0.0` and `NaN` at `NaN`. Deseasonalized 12-month handover steps are `−0.60σ` (`2002-07`) and `+0.64σ` (`2012-01`). Remaining limitations (Terra→Aqua single-month median error 68%, seasonal diurnal bias, ~10% Aqua→VIIRS drift) are documented in `docs/11-calibration-report.md` and `README.md`.
 
 ## Git conventions
 

@@ -17,17 +17,17 @@ Task IDs and "done when" are in `docs/03-implementation-plan.md` §5. Tick **you
 - [ ] Submission: README (drafted; needs app run steps now `api/` + `web/` exist, and a teammate review)
 
 ## Person 2: Calibration & data (stages 5-7)
-- [ ] CAL-1 H2 schemas + sample `cell_month.parquet` + `meta.json`
-- [ ] CAL-2 calibrate
-- [ ] CAL-3 harmonize
-- [ ] CAL-4 export
-- [ ] CAL-5 splice check
+- [x] CAL-1 H2 schemas + sample `cell_month.parquet` + `meta.json` (confirmed in `contracts/cell_month.schema.md` + `data/`)
+- [x] CAL-2 calibrate (Option C `ratio_of_totals` default, keeps 0 at 0; `docs/11-calibration-report.md`)
+- [x] CAL-3 harmonize (`0` detections stay `0.0`, `NaN` stays `NaN`; 60 pipeline tests pass)
+- [x] CAL-4 export (`data/cell_month.parquet` + `data/meta.json` + `data/calibration.json`, `0.2-ratio-of-totals`)
+- [x] CAL-5 splice check (`science/splice_check.py` + deseasonalized `science/splice_placebo.py`)
 - [ ] CAL-6 cell size check
-- [ ] CAL-7 hero figure
-- [ ] CAL-8 real-data runbook
-- [ ] CAL-9 run runbook, 12:00 go/no-go
-- [ ] CAL-10 explainer text
-- [ ] Submission: 2 slides
+- [x] CAL-7 hero figure (`science/hero_figure.py` → `science/figures/hero.png`)
+- [x] CAL-8 real-data runbook (`science/real_report.py` → `out/real_report/`)
+- [x] CAL-9 run runbook, 12:00 go/no-go (GO with real data + limitations; `docs/11-calibration-report.md`)
+- [x] CAL-10 explainer text (`docs/explainer.md`)
+- [x] Submission: 2 slides (`docs/explainer.md` §2)
 
 ## Person 3: Backend API
 - [x] API-1 `Makefile` targets, H3 (`contracts/api/types.ts` + `contracts/fixtures/`, generated from the stand-in sample)
