@@ -47,5 +47,5 @@ Task IDs and "done when" are in `docs/03-implementation-plan.md` §5. Tick **you
 - [ ] Submission: demo video
 
 ## Person 5: Frontend charts
-- [ ] CHT-1 … CHT-9 (see plan)
-- [ ] Submission: slide deck + presenting
+- [x] CHT-1 … CHT-9 (see plan; CHT-1 playground, CHT-2 to 6 heatmaps & quality, CHT-7 app integration, CHT-8 SVG/PNG export, CHT-9 top-5 anomalies; 19 tests passing)
+- [x] Submission: slide deck + presenting (docs/submission/presentation_deck.md and showcase_script.md ready for 15:00 Showcase)
