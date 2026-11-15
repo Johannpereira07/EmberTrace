@@ -10,7 +10,7 @@ import {
   safeLog2Anomaly,
   getViridisColor,
   SPECIAL_CELL_COLORS,
-  ANOMALY_PALETTE,
+  ANOMALY_STOPS,
 } from './scales';
 
 describe('Scales & Color Logic', () => {
@@ -54,36 +54,43 @@ describe('Scales & Color Logic', () => {
   });
 
   describe('safeLog2Anomaly', () => {
-    it('guards against -Infinity for 0 or negative values', () => {
-      const zeroLog = safeLog2Anomaly(0);
-      expect(Number.isFinite(zeroLog)).toBe(true);
-      expect(zeroLog).toBeLessThan(0);
-      expect(zeroLog).toBe(Math.log2(0.05));
-    });
-
-    it('returns exact 0 for 1.0 (normal ratio)', () => {
+    it('clamps ratio before log to domain [-2, 2] (0.25x to 4x)', () => {
+      expect(safeLog2Anomaly(0)).toBe(-2);
+      expect(safeLog2Anomaly(0.1)).toBe(-2);
+      expect(safeLog2Anomaly(0.25)).toBe(-2);
+      expect(safeLog2Anomaly(0.5)).toBe(-1);
       expect(safeLog2Anomaly(1.0)).toBe(0);
+      expect(safeLog2Anomaly(2.0)).toBe(1);
+      expect(safeLog2Anomaly(4.0)).toBe(2);
+      expect(safeLog2Anomaly(10.0)).toBe(2);
     });
   });
 
   describe('getAnomalyColor', () => {
-    it('returns neutral color for normal baseline (1.0)', () => {
-      const result = getAnomalyColor(1.0, 'ok');
-      expect(result.fill).toBe(ANOMALY_PALETTE.normal);
+    it('returns exact specified palette stops for PRD compliance', () => {
+      // 0 gives #2166ac
+      expect(getAnomalyColor(0, 'ok').fill).toBe('#2166ac');
+      // 0.25 and below gives #2166ac
+      expect(getAnomalyColor(0.25, 'ok').fill).toBe('#2166ac');
+      expect(getAnomalyColor(0.1, 'ok').fill).toBe('#2166ac');
+      // 0.5 gives #92c5de
+      expect(getAnomalyColor(0.5, 'ok').fill).toBe('#92c5de');
+      // 1 gives #f7f7f7
+      expect(getAnomalyColor(1, 'ok').fill).toBe('#f7f7f7');
+      expect(getAnomalyColor(1.0, 'ok').fill).toBe('#f7f7f7');
+      // 2 gives #fdb863
+      expect(getAnomalyColor(2, 'ok').fill).toBe('#fdb863');
+      expect(getAnomalyColor(2.0, 'ok').fill).toBe('#fdb863');
+      // 4 and above give #b35806
+      expect(getAnomalyColor(4, 'ok').fill).toBe('#b35806');
+      expect(getAnomalyColor(4.0, 'ok').fill).toBe('#b35806');
+      expect(getAnomalyColor(5.5, 'ok').fill).toBe('#b35806');
     });
 
-    it('returns blue palette for below normal (<1.0)', () => {
-      const lowResult = getAnomalyColor(0.4, 'ok');
-      expect(lowResult.fill).toBe(ANOMALY_PALETTE.low);
-      const extremeLow = getAnomalyColor(0.1, 'ok');
-      expect(extremeLow.fill).toBe(ANOMALY_PALETTE.extremeLow);
-    });
-
-    it('returns orange/red palette for above normal (>1.0)', () => {
-      const highResult = getAnomalyColor(1.8, 'ok');
-      expect(highResult.fill).toBe(ANOMALY_PALETTE.moderateHigh);
-      const extremeHigh = getAnomalyColor(4.5, 'ok');
-      expect(extremeHigh.fill).toBe(ANOMALY_PALETTE.extremeHigh);
+    it('contains no red colors in any stops', () => {
+      expect(ANOMALY_STOPS).not.toContain('#d6604d');
+      expect(ANOMALY_STOPS).not.toContain('#67001f');
+      expect(ANOMALY_STOPS.length).toBe(9);
     });
 
     it('handles special statuses (out_of_range, not_enough_history, unavailable)', () => {

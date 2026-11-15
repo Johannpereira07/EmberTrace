@@ -8,7 +8,7 @@ import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { CalendarApiResponse, GridCell, ChartExportRef, NoticeTopic } from './types';
 import { buildGridModel, MONTH_NAMES, getMonthRange, formatMonthLabel } from './cellModel';
 import { RowLabel, HandoverEdge, ROW_LABEL_WIDTH } from './SourceMarks';
-import { getAnomalyColor, formatAnomaly, SPECIAL_CELL_COLORS, ANOMALY_PALETTE } from '../../styles/scales';
+import { getAnomalyColor, formatAnomaly, SPECIAL_CELL_COLORS, ANOMALY_STOPS } from '../../styles/scales';
 
 export interface AnomalyHeatmapProps {
   data: CalendarApiResponse | null;
@@ -278,13 +278,13 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                   Anomaly vs Median:
                 </text>
 
-                <text x="125" y="0" fontSize="10" fill="#38bdf8">&lt;= 0.25x</text>
-                <g transform="translate(175, -9)">
-                  {Object.values(ANOMALY_PALETTE).map((color, idx) => (
+                <text x="125" y="0" fontSize="10" fill="#38bdf8">&lt;=0.25x</text>
+                <g transform="translate(170, -9)">
+                  {ANOMALY_STOPS.map((color, idx) => (
                     <rect key={idx} x={idx * 13} y="0" width="13" height="11" fill={color} stroke="#334155" strokeWidth="0.5" />
                   ))}
                 </g>
-                <text x="300" y="0" fontSize="10" fill="#f97316">&gt;= 4.0x</text>
+                <text x="295" y="0" fontSize="10" fill="#f97316">&gt;=4x</text>
 
                 {/* n/c partial */}
                 <rect x="350" y="-10" width="13" height="13" rx="2" fill="#0f172a" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { VIRIDIS_STOPS, ANOMALY_PALETTE, SPECIAL_CELL_COLORS } from '../../styles/scales';
+import { VIRIDIS_STOPS, ANOMALY_STOPS, SPECIAL_CELL_COLORS } from '../../styles/scales';
 import { SOURCE_INFO, formatMonthLabel } from './cellModel';
 import type { SourceSpan } from './types';
 
@@ -69,19 +69,22 @@ export const ChartLegend: React.FC<LegendProps> = ({
             <span className="font-semibold text-white">Anomaly vs Median:</span>
             
             <div className="flex items-center gap-1.5">
-              <span className="text-sky-400 font-medium">0.2x (Low)</span>
+              <span className="text-sky-400 font-medium">&lt;=0.25x</span>
               <div className="flex gap-0.5">
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.extremeLow }} title="< 0.2x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.low }} title="0.2x - 0.5x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.moderateLow }} title="0.5x - 0.8x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.nearNormalLow }} title="0.8x - 1.0x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.normal, border: '1px solid #475569' }} title="1.0x (Normal)" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.nearNormalHigh }} title="1.0x - 1.25x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.moderateHigh }} title="1.25x - 2.0x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.high }} title="2.0x - 4.0x" />
-                <span style={{ width: '14px', height: '12px', backgroundColor: ANOMALY_PALETTE.extremeHigh }} title="> 4.0x" />
+                {ANOMALY_STOPS.map((color, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      width: '13px',
+                      height: '12px',
+                      backgroundColor: color,
+                      border: idx === 4 ? '1px solid #475569' : undefined,
+                    }}
+                    title={idx === 4 ? '1.0x (Normal)' : undefined}
+                  />
+                ))}
               </div>
-              <span className="text-orange-400 font-medium">4.0x+ (High)</span>
+              <span className="text-orange-400 font-medium">&gt;=4x</span>
             </div>
           </div>
         )}
