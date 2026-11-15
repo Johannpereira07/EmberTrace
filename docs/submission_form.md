@@ -9,9 +9,9 @@
 
 | Teammate | Role | What You Need to Fill In / Do | Where in This File |
 |---|---|---|---|
-| **Person 1** | Ingest & Pipeline Lead | 1. Confirm which AI coding tools you used on `pipeline/ingest/`, `scripts/`, and `tools/synthetic/`.<br>2. Update `README.md` status table so Stages 5–7 say `✅ Complete (0.3-monthly-ratio)` instead of `⚠️ In progress`. | **Section 8** (`[FILL IN]` items) & **Part II.C** |
-| **Person 2** | Calibration & Data Engineer | ✅ Done: All real-data calibration, hold-out, splice-check, outage, static-mask, and grid-resolution numbers verified and written below; `hero.png` and overlap plots generated. | **Sections 1–8** & **Part II.B** |
-| **Person 3** | Backend & Deployment Lead | 1. Paste the deployed **Google Cloud Run URL** (`asia-south1`).<br>2. Confirm `https://github.com/Johannpereira07/EmberTrace` is set to **Public** and add a root `LICENSE` file (e.g., MIT).<br>3. Update `DEFAULT_VERSION = "0.3-monthly-ratio"` in `pipeline/export.py`.<br>4. Confirm AI tools used on `api/` and deployment, then paste **Sections 1–8** into the Space Apps portal. | **Section 4**, **Section 7**, **Section 8**, & **Part II.C** |
+| **Person 1** | Ingest & Pipeline Lead | Confirm which AI coding tools you used on `pipeline/ingest/`, `scripts/`, and `tools/synthetic/`. | **Section 8** (`[FILL IN]` items) |
+| **Person 2** | Calibration & Data Engineer | ✅ Done: All real-data calibration, hold-out, splice-check, outage, static-mask, and grid-resolution numbers verified and written below; `hero.png`, overlap plots, `README.md`, `docs/README.md`, and root `LICENSE` updated. | **Sections 1–8** & **Part II.B** |
+| **Person 3** | Backend & Deployment Lead | 1. Paste the deployed **Google Cloud Run URL** (`asia-south1`).<br>2. Confirm `https://github.com/Johannpereira07/EmberTrace` is set to **Public**.<br>3. Confirm AI tools used on `api/` and deployment, then paste **Sections 1–8** into the Space Apps portal. | **Section 4** & **Section 8** |
 | **Person 4** | Frontend App & Map Lead | 1. Paste the public URL to the **30-second demo video** (with English subtitles, tested in an incognito window).<br>2. Confirm AI tools used on `web/` and video/subtitles. | **Section 3** & **Section 8** |
 | **Person 5** | Charts, Story Globe & Slides | 1. Paste the public URL to the **7-slide presentation deck** (tested in an incognito window).<br>2. Confirm AI tools used on `web/src/features/charts/`, `web/src/story/`, and slide deck. | **Section 3** & **Section 8** |
 
@@ -204,8 +204,7 @@ Specifically, we used **8 regional archive and Near-Real-Time (NRT) CSV files** 
 - **EmberTrace Synthetic Demonstration Dataset (`tools/synthetic/`):** Generated in-house by our deterministic synthetic generator script using planted mathematical ground-truth rates to test pipeline recovery and UI demonstration mode.
 
 ## Open-Source Software Libraries and Tools
-*(Repository license: `[TBD: Person 3 — add root LICENSE file (e.g., MIT License) to repo before submitting and state license name here]`. Third-party open-source libraries used by EmberTrace and their upstream licenses are listed below:)*
-
+- **EmberTrace Source Code (`https://github.com/Johannpereira07/EmberTrace`):** Released under the **MIT License** (`LICENSE`).
 - **Python Packages:**
   - `pandas` (`>=3.1,<4` in pipeline; `>=2.2,<4` in API) — BSD-3-Clause License
   - `numpy` (`>=2.4,<3` in pipeline; `>=1.26,<3` in API) — BSD-3-Clause License
@@ -263,9 +262,7 @@ In accordance with NASA Space Apps Challenge rules, we disclose all Artificial I
 2. **Section 4 (Link to Final Project):**
    - `[TBD: Person 3 — paste deployed Cloud Run public URL]`
    - `[FILL IN: Person 3 — confirm repository visibility is set to Public before submitting]`
-3. **Section 7 (Space Agency Partner & Other Data):**
-   - `[TBD: Person 3 — add root LICENSE file (e.g., MIT License) to repo before submitting and state license name here]`
-4. **Section 8 (Use of Artificial Intelligence):**
+3. **Section 8 (Use of Artificial Intelligence):**
    - `[FILL IN: Person 1 / Person 3 / Person 4 — list which folders/tasks were written or assisted with Claude Code]`
    - `[FILL IN: Team — note any other components assisted by Codex/OpenCode]`
    - `[FILL IN: Person 4 & Person 5 — confirm scope of VS Code Copilot usage]`
@@ -306,14 +303,13 @@ In accordance with NASA Space Apps Challenge rules, we disclose all Artificial I
 
 ---
 
-## C. Repo Consistency Items for Person 1 & Person 3 Before Making the Repo Public
+## C. Final Pre-Submit Portal Checklist (Person 3 / All)
 
-1. **`README.md` Status Table (Person 1):**
-   - `README.md` (lines 21, 78, 82) still says Stages 5–7 are `⚠️ In progress` with the old `0.1-calibration-pending` zero-to-positive floor issue. Update `README.md` on `main` so judges visiting the GitHub repo see `✅ Complete (0.3-monthly-ratio, zero-preserving calendar-month ratios)`.
-2. **`pipeline/export.py` Default Version (Person 3):**
-   - Update line 25 of `pipeline/export.py` from `DEFAULT_VERSION = "0.1-calibration-pending"` to `DEFAULT_VERSION = "0.3-monthly-ratio"` so running `make export` without `--pipeline-version` preserves the current version string.
-3. **Root `LICENSE` File (Person 3):**
-   - Add an open-source `LICENSE` file (e.g., MIT) at the repository root before submitting.
-4. **Final Portal Checks (Person 3 / All):**
+1. **Completed Repo Updates (`✅ Done`):**
+   - `README.md` updated with production `0.3-monthly-ratio` status, embedded hero figure (`science/figures/hero.png`), validation summary table, and full-stack run commands.
+   - `docs/README.md` updated with links to `11-calibration-report.md`, `explainer.md`, and `submission_form.md`.
+   - `pipeline/export.py` updated to `DEFAULT_VERSION = "0.3-monthly-ratio"`.
+   - Open-source `LICENSE` (MIT License) added at repository root.
+2. **Final Portal Checks Before Clicking Submit:**
    - Open every URL in **Sections 3 and 4** (Demo Video/Slides, Cloud Run live app, GitHub repo) in an **incognito browser window** to confirm no login or permission wall blocks the judges.
    - Verify no NASA logos or official insignia appear on the web app, slide deck, or video.
