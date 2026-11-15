@@ -6,9 +6,9 @@
 
 import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { CalendarApiResponse, GridCell, ChartExportRef, NoticeTopic } from './types';
-import { buildGridModel, MONTH_NAMES } from './cellModel';
+import { buildGridModel, MONTH_NAMES, getMonthRange, formatMonthLabel } from './cellModel';
 import { RowLabel, HandoverEdge, ROW_LABEL_WIDTH } from './SourceMarks';
-import { getActivityColor, formatCount, SPECIAL_CELL_COLORS } from '../../styles/scales';
+import { getActivityColor, formatCount, SPECIAL_CELL_COLORS, VIRIDIS_STOPS } from '../../styles/scales';
 
 export interface CalendarHeatmapProps {
   data: CalendarApiResponse | null;
@@ -55,11 +55,21 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
 
     const gridWidth = LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 60;
     const numRows = model.rows.length;
-    const gridHeight =
+    const rowsHeight =
       TOP_HEADER_HEIGHT +
       numRows * (CELL_HEIGHT + CELL_GAP) +
-      (showMedianRow ? MEDIAN_ROW_GAP + CELL_HEIGHT : 0) +
-      45;
+      (showMedianRow ? MEDIAN_ROW_GAP + CELL_HEIGHT : 0);
+    const LEGEND_TOP = rowsHeight + 20;
+    const LEGEND_SECTION_HEIGHT = 80;
+    const METADATA_SECTION_HEIGHT = 45;
+    const gridHeight = LEGEND_TOP + LEGEND_SECTION_HEIGHT + METADATA_SECTION_HEIGHT;
+
+    const range = data ? getMonthRange(data) : null;
+    const dateRangeStr = range ? `${formatMonthLabel(range.first)} – ${formatMonthLabel(range.last)}` : '';
+    const aoi = model.meta?.aoi_analyzed;
+    const aoiStr = aoi
+      ? `AOI: [${aoi.min_lat.toFixed(2)}°, ${aoi.min_lon.toFixed(2)}°] to [${aoi.max_lat.toFixed(2)}°, ${aoi.max_lon.toFixed(2)}°] (${model.meta?.n_cells ?? 0} cells)`
+      : '';
 
     useImperativeHandle(ref, () => ({
       getSvgElement: () => svgRef.current,
@@ -331,13 +341,76 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
               </g>
             )}
 
-            {/* Watermark / Synthetic Disclaimer */}
-            <g transform={`translate(${LEFT_LABEL_WIDTH}, ${gridHeight - 16})`}>
-              <text x="0" y="0" fontSize="10" fill="#64748b">
-                {model.meta?.data_kind === 'synthetic'
-                  ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
-                  : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
-              </text>
+            {/* Definitions */}
+            <defs>
+              <linearGradient id="cal-viridis-ramp" x1="0%" y1="0%" x2="100%" y2="0%">
+                {VIRIDIS_STOPS.map((color, idx) => (
+                  <stop key={idx} offset={`${(idx / (VIRIDIS_STOPS.length - 1)) * 100}%`} stopColor={color} />
+                ))}
+              </linearGradient>
+            </defs>
+
+            {/* Embedded SVG Legend (Export & Screen) */}
+            <g transform={`translate(0, ${LEGEND_TOP})`}>
+              <line
+                x1={LEFT_LABEL_WIDTH - 10}
+                y1="-8"
+                x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 50}
+                y2="-8"
+                stroke="#1e293b"
+                strokeWidth="1"
+              />
+
+              {/* Row 1: Ramp + state swatches */}
+              <g transform={`translate(${LEFT_LABEL_WIDTH}, 10)`}>
+                <text x="0" y="0" fontSize="11" fontWeight="600" fill="#f8fafc">
+                  Fire Detections:
+                </text>
+
+                {/* 0 (Hollow) swatch */}
+                <rect x="100" y="-10" width="13" height="13" rx="2" fill="#090d16" stroke="#64748b" strokeWidth="1.5" />
+                <text x="118" y="0" fontSize="10" fill="#94a3b8">0 (Hollow)</text>
+
+                {/* Viridis Ramp */}
+                <text x="180" y="0" fontSize="10" fill="#94a3b8">1</text>
+                <rect x="192" y="-9" width="110" height="11" rx="2" fill="url(#cal-viridis-ramp)" stroke="#334155" strokeWidth="1" />
+                <text x="308" y="0" fontSize="10" fontWeight="600" fill="#e2e8f0">{Math.round(effectiveMax).toLocaleString()}+</text>
+
+                {/* Missing / Unavailable */}
+                <rect x="365" y="-10" width="13" height="13" rx="2" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="383" y="0" fontSize="10" fill="#94a3b8">No Data</text>
+
+                {/* Provisional NRT */}
+                <rect x="440" y="-8" width="9" height="9" rx="1.5" fill="#f59e0b" />
+                <text x="454" y="0" fontSize="10" fill="#94a3b8">Provisional (NRT)</text>
+              </g>
+
+              {/* Row 2: Sensor Epochs */}
+              {showSensorMarkers && (
+                <g transform={`translate(${LEFT_LABEL_WIDTH}, 34)`}>
+                  <circle cx="5" cy="-3" r="4" fill="#a855f7" />
+                  <text x="14" y="0" fontSize="10" fill="#94a3b8">Terra (Nov 2000 – Jun 2002)</text>
+
+                  <circle cx="165" cy="-3" r="4" fill="#3b82f6" />
+                  <text x="174" y="0" fontSize="10" fill="#94a3b8">Aqua (Jul 2002 – Dec 2011)</text>
+
+                  <circle cx="325" cy="-3" r="4" fill="#10b981" />
+                  <text x="334" y="0" fontSize="10" fill="#94a3b8">VIIRS (Jan 2012 – Present)</text>
+                </g>
+              )}
+
+              {/* Row 3: Metadata, Disclaimer, AOI & Date Range */}
+              <g transform={`translate(${LEFT_LABEL_WIDTH}, 62)`}>
+                <line x1="0" y1="-8" x2={12 * (CELL_WIDTH + CELL_GAP) + 50} y2="-8" stroke="#1e293b" strokeWidth="1" />
+                <text x="0" y="4" fontSize="10" fontWeight="600" fill={model.meta?.data_kind === 'synthetic' ? '#f59e0b' : '#94a3b8'}>
+                  {model.meta?.data_kind === 'synthetic'
+                    ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
+                    : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
+                </text>
+                <text x="0" y="19" fontSize="9.5" fill="#64748b">
+                  {[dateRangeStr ? `Coverage: ${dateRangeStr}` : '', aoiStr].filter(Boolean).join('  •  ')}
+                </text>
+              </g>
             </g>
           </svg>
         </div>
