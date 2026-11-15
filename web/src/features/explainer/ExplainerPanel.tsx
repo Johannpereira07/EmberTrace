@@ -9,10 +9,12 @@ const PLACEHOLDER_TEXT = `EmberTrace combines fire detections from three satelli
 Aqua MODIS and VIIRS (S-NPP, NOAA-20 and NOAA-21). MODIS and VIIRS count fires differently,
 so their counts cannot be compared directly.
 
-Each older series is converted to VIIRS-equivalent counts with one factor: total VIIRS detections
-divided by total Aqua detections over years when both observed the same places (and Terra to Aqua
-the same way). A month with no fires stays at zero. One factor is fitted for the whole region,
-offline; it is never refitted for your selected area.
+Each older series is converted to VIIRS-equivalent counts with one factor per calendar month:
+total VIIRS detections divided by total Aqua detections in that month, over years when both observed
+the same places (and Terra to Aqua the same way). The ratio changes with the seasons, so January and
+October get their own factors; the monsoon months June to September have few fires and share one.
+A month with no fires stays at zero. The factors are fitted once for the whole region, offline; they
+are never refitted for your selected area.
 
 The earliest months, before Aqua flew, are converted in two steps (Terra to Aqua to VIIRS) and are
 the least certain. Provisional (near real-time) months use preliminary data and may change.`;
