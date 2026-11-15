@@ -3,10 +3,13 @@
  * Steps point at elements marked `data-tour="<topic>"`; a step whose element is not on screen is skipped.
  * It starts by itself on the first visit in a browser session: not again on refresh, but again after the
  * tab or browser is closed (sessionStorage). The header "Guide" button restarts it.
+ * The highlighted element stays usable, so a visitor can try it (e.g. draw an area) during the tour;
+ * the dimmed rest of the page is blocked but does not close the tour.
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GUIDE, TOUR_ORDER, GuideTopic } from './content';
+import { useAppState } from '../../app/store';
 
 const SEEN_KEY = 'embertrace.tour.seen';
 const PAD = 8;
@@ -102,11 +105,27 @@ function TourStep({
   const last = index === steps.length - 1;
   const [rect, setRect] = useState<DOMRect | null>(null);
   const card = useRef<HTMLDivElement>(null);
+  const { state } = useAppState();
+  const calendarAtStart = useRef(state.calendarData);
+
+  // Learn by doing: when a new area is loaded during the map step (drawn, or a region picked),
+  // move on to the next step once its calendar is on screen.
+  useEffect(() => {
+    if (index === 0) calendarAtStart.current = state.calendarData;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+  useEffect(() => {
+    if (topic !== 'map' || last) return;
+    if (state.status === 'success' && state.calendarData !== calendarAtStart.current) setIndex(index + 1);
+  }, [topic, last, index, setIndex, state.status, state.calendarData]);
 
   // Bring the step's element into view and follow it while the page scrolls or resizes.
   useLayoutEffect(() => {
     const el = target(topic);
-    if (!el) return;
+    if (!el) {
+      setRect(null);
+      return;
+    }
     // A tall element starts at the top of the screen, so its beginning (headings, legend) is in view.
     const tall = el.getBoundingClientRect().height > window.innerHeight * 0.6;
     el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
@@ -114,9 +133,12 @@ function TourStep({
     update();
     window.addEventListener('resize', update);
     window.addEventListener('scroll', update, true); // capture: the explorer scrolls inner panels
+    const resize = new ResizeObserver(update); // e.g. an explanation opens inside the element
+    resize.observe(el);
     return () => {
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update, true);
+      resize.disconnect();
     };
   }, [topic]);
 
@@ -124,24 +146,11 @@ function TourStep({
     card.current?.focus();
   }, [index]);
 
+  // Keys work while focus is in the card. Not a focus trap: the highlighted element is usable too.
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Escape') onClose();
     else if (e.key === 'ArrowRight' && !last) setIndex(index + 1);
     else if (e.key === 'ArrowLeft' && index > 0) setIndex(index - 1);
-    else if (e.key === 'Tab') {
-      // Keep keyboard focus inside the tour card while it is open.
-      const items = card.current?.querySelectorAll<HTMLElement>('button');
-      if (!items || items.length === 0) return;
-      const first = items[0];
-      const end = items[items.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === card.current)) {
-        e.preventDefault();
-        end.focus();
-      } else if (!e.shiftKey && document.activeElement === end) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
   }
 
   // Card below the element if there is room, else above, else in the bottom-right corner (tall
@@ -159,9 +168,19 @@ function TourStep({
   }
 
   return (
-    <div className="fixed inset-0 z-[2000]" onKeyDown={onKeyDown}>
-      {/* Blocks clicks on the page; the spotlight's shadow dims everything but the step's element. */}
-      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+    <div className="fixed inset-0 z-[2000] pointer-events-none" onKeyDown={onKeyDown}>
+      {/* Four blockers around the highlighted element: the dimmed page can't be clicked, the element can. */}
+      {(rect
+        ? [
+            { left: 0, top: 0, width: vw, height: Math.max(0, rect.top - PAD) },
+            { left: 0, top: rect.bottom + PAD, width: vw, height: Math.max(0, vh - rect.bottom - PAD) },
+            { left: 0, top: rect.top - PAD, width: Math.max(0, rect.left - PAD), height: rect.height + PAD * 2 },
+            { left: rect.right + PAD, top: rect.top - PAD, width: Math.max(0, vw - rect.right - PAD), height: rect.height + PAD * 2 },
+          ]
+        : [{ left: 0, top: 0, width: vw, height: vh }]
+      ).map((box, i) => (
+        <div key={i} aria-hidden="true" className="absolute pointer-events-auto" style={box} />
+      ))}
       {rect && (
         <div
           aria-hidden="true"
@@ -179,11 +198,11 @@ function TourStep({
       <div
         ref={card}
         role="dialog"
-        aria-modal="true"
+        aria-modal="false"
         aria-labelledby="tour-title"
         aria-describedby="tour-body"
         tabIndex={-1}
-        className="absolute p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-200 focus:outline-none"
+        className="absolute pointer-events-auto p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-200 focus:outline-none"
         style={style}
       >
         <p className="text-[11px] font-mono text-sky-300">

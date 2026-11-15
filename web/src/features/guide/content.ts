@@ -26,7 +26,7 @@ export interface GuideEntry {
 export const GUIDE: Record<GuideTopic, GuideEntry> = {
   map: {
     title: 'Choose an area on the map',
-    tour: 'Press "Draw an area", then click and drag a box. The calendar loads for that box straight away.',
+    tour: 'Try it: press "Draw an area" and drag a box on the map. Its calendar loads straight away and the tour moves on. Or press Next.',
     detail: [
       'The blue box is the area you asked for.',
       'Fire counts are stored on a grid of 0.25° cells, so the area is widened to the whole cells it touches. That analysed area is the orange dashed box.',
