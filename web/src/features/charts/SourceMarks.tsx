@@ -57,9 +57,7 @@ export function HandoverEdge({ cell, cellHeight }: { cell: GridCell; cellHeight:
   const info = SOURCE_INFO[cell.source];
   return (
     <rect x={-3} y={-2} width={3} height={cellHeight + 4} rx={1} fill={info.color}>
-      <title>
-        {info.short} from {formatMonthLabel(cell.monthStr)}
-      </title>
+      <title>{`${info.short} from ${formatMonthLabel(cell.monthStr)}`}</title>
     </rect>
   );
 }
