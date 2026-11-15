@@ -52,14 +52,14 @@ def test_wrong_conversion_fails_with_the_right_step():
     assert r["result"] == "FAIL" and r["step"] == pytest.approx(0.8)   # VIIRS / (1.25 x VIIRS)
 
 
-def test_zero_floor_is_caught():
-    # the real issue: a positive intercept turns 0 detections into a positive value
-    floor = {"aqua_to_viirs": {"slope": 1.0, "intercept": 0.5, "bias_factor": 1.0},
-             "terra_to_aqua": EXACT["terra_to_aqua"]}
-    cm = _cell_month(MONTHS)
-    cm.loc[cm["cell_lat"] == 21.375, ["aqua_count_norm", "viirs_count_norm"]] = 0.0   # a quiet cell
-    r = sc.check_source_handover(cm, floor, "2012-01", sc.excluded_months(META), 12, 0.05)
-    assert r["result"] == "FAIL"
+def test_zero_floor_is_eliminated():
+    # Core fix: apply_log_line(0) = 0 even with a positive intercept cal.
+    # The old code returned (e^intercept - 1) * bias > 0 for zero.
+    from pipeline.model.calibrate import apply_log_line  # noqa: E402
+    import numpy as np
+    floor = {"slope": 1.0, "intercept": 0.5, "bias_factor": 1.0}
+    assert apply_log_line(np.array([0.0]), floor)[0] == 0.0
+    assert apply_log_line(np.array([1.0]), floor)[0] > 0  # nonzero still maps positively
 
 
 def test_provisional_and_partial_months_are_skipped():
