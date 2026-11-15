@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmberTrace — Showcase Presentation (NASA Space Apps 2026)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #f97316;
+      --primary-light: #fdba74;
+      --secondary: #38bdf8;
+      --accent: #a855f7;
+      --border: #334155;
+      --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Bar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+    .badge-container { display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-nasa { background: #dc2626; color: #fff; }
+    .badge-event { background: #334155; color: #cbd5e1; }
+    .timer-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: monospace;
+      font-size: 15px;
+      background: #1e293b;
+      padding: 4px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .timer-display { font-weight: 700; color: #38bdf8; }
+    .timer-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .timer-btn:hover { color: #fff; }
+
+    /* Slide Deck Viewport */
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      position: relative;
+    }
+    .slide {
+      display: none;
+      width: 100%;
+      max-width: 1100px;
+      height: 100%;
+      max-height: 620px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 48px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      flex-direction: column;
+      justify-content: space-between;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .slide.active { display: flex; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Content Typography */
+    .slide-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .slide-title {
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1.2;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .slide-body {
+      flex: 1;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      overflow-y: auto;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card p, .card li { font-size: 14px; color: var(--text-muted); }
+    ul { list-style: disc; margin-left: 20px; }
+    li { margin-bottom: 6px; }
+
+    .highlight-stat {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+
+    /* Footer & Controls */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 28px;
+      background: #0f172a;
+      border-top: 1px solid var(--border);
+    }
+    .nav-controls { display: flex; align-items: center; gap: 12px; }
+    .btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #1e293b;
+      color: #fff;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: #334155; }
+    .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background: #ea580c; }
+    .progress-text { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+
+    /* Notes Drawer */
+    #notes-drawer {
+      display: none;
+      position: absolute;
+      bottom: 65px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 900px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--primary);
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      z-index: 20;
+    }
+    #notes-drawer.open { display: block; }
+    .notes-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 700; color: var(--primary-light); font-size: 12px; }
+    .notes-content { font-size: 14px; line-height: 1.5; color: #f1f5f9; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="badge-container">
+      <span class="badge badge-nasa">NASA Space Apps 2026</span>
+      <span class="badge badge-event">Challenge 15 • Showcase</span>
+      <span style="font-weight: 700; font-size: 14px; margin-left: 8px; color: #fff;">EmberTrace</span>
+    </div>
+
+    <!-- Live Timer (5 Minutes) -->
+    <div class="timer-container">
+      <span>⏱️ Pitch Time:</span>
+      <span class="timer-display" id="timer">00:00 / 05:00</span>
+      <button class="timer-btn" id="timer-toggle" onclick="toggleTimer()">Start</button>
+      <button class="timer-btn" onclick="resetTimer()">Reset</button>
+    </div>
+  </header>
+
+  <!-- Slide Viewport -->
+  <main>
+
+    <!-- Slide 1: Title -->
+    <div class="slide active" data-slide="1">
+      <div>
+        <div class="slide-tag">NASA Space Apps Challenge 2026 · Challenge 15</div>
+        <h1 class="slide-title">EmberTrace: Harmonized Multi-Decade Burning Activity Calendar</h1>
+        <p style="font-size: 18px; color: var(--primary-light); margin-bottom: 24px;">
+          A seamless 26-year satellite fire record from NASA FIRMS without sensor handover artifacts
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🚀 Challenge Mission</div>
+          <p>Harmonize active-fire records across MODIS (Terra/Aqua) and VIIRS (S-NPP/NOAA-20/NOAA-21) to eliminate artificial sensor-handover discontinuities and provide intuitive burning activity calendars.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">👥 Team Roles</div>
+          <ul style="font-size: 13px;">
+            <li><strong>Person 1:</strong> Ingest Pipeline (Load, clean, grid, NRT static mask)</li>
+            <li><strong>Person 2:</strong> Calibration & Science (Overlap regression, splice checks)</li>
+            <li><strong>Person 3:</strong> Backend API & Deploy (FastAPI, Google Cloud Run)</li>
+            <li><strong>Person 4:</strong> Frontend Lead (Interactive map, filters, data quality)</li>
+            <li><strong>Person 5 (Presenter):</strong> Charts Engineer (Scales, heatmaps, slide deck)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between;">
+        <span>Product: EmberTrace</span>
+        <span>Nov 2000 – Nov 2026 (313 Observation Months)</span>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Problem -->
+    <div class="slide" data-slide="2">
+      <div>
+        <div class="slide-tag">The Multi-Decade Challenge</div>
+        <h2 class="slide-title">The Multi-Sensor Discontinuity Dilemma</h2>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="card">
+          <div class="card-title">1. Resolution Mismatch</div>
+          <p><strong>MODIS (~1 km)</strong> vs <strong>VIIRS (375 m)</strong>.<br>VIIRS detects smaller, cooler, and nighttime fires that MODIS systematically misses.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">2. Changing Satellites</div>
+          <p>1 satellite in 2000 (Terra) → 2 in 2002 (Aqua joins) → up to 5 in 2023. Raw counts spike with satellite launches, independent of real fire activity.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">3. The 2012 Fake Jump</div>
+          <p>Merging raw counts creates a false <strong>+118% jump</strong> in 2012. Users cannot tell whether fires doubled or if the camera just got sharper.</p>
+        </div>
+      </div>
+
+      <div class="card" style="background: rgba(220, 38, 38, 0.1); border-color: rgba(220, 38, 38, 0.4);">
+        <div class="card-title" style="color: #f87171;">⚠️ Why Simple Averaging Fails</div>
+        <p style="color: #fecaca;">Averaging sensors blends different sensitivities and creates a downward step when older sensors decommission. A true continuous baseline requires physical harmonization to VIIRS equivalence.</p>
+      </div>
+    </div>
+
+    <!-- Slide 3: Pipeline & Architecture -->
+    <div class="slide" data-slide="3">
+      <div>
+        <div class="slide-tag">Methodology & Architecture</div>
+        <h2 class="slide-title">The 7-Stage Harmonization Engine</h2>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">⚙️ Processing Flow (`harmonize.py`)</div>
+          <ol style="margin-left: 20px; font-size: 13px; color: var(--text-muted); line-height: 1.8;">
+            <li><strong>Load & Unify:</strong> Identify sensor from satellite name; unify schemas.</li>
+            <li><strong>Filter:</strong> Drop low confidence; empirical static flare mask for NRT.</li>
+            <li><strong>Grid & Count:</strong> 0.25° cells per month; quiet cells filled with 0.</li>
+            <li><strong>Normalize:</strong> Divide counts by active satellites (accounting for NASA outage days).</li>
+            <li><strong>Calibrate:</strong> Log1p regression on drift-free afternoon orbits (2012–2019) + bias factor.</li>
+            <li><strong>Harmonize:</strong> VIIRS (2012+), Calibrated Aqua (2002–11), Chained Terra (2000–02).</li>
+            <li><strong>Calendar:</strong> 26-year monthly totals and anomaly ratios vs medians.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🔬 Key Scientific Innovations</div>
+          <ul>
+            <li><strong>Afternoon Orbit Matching:</strong> Aqua and VIIRS share 1:30 PM overpasses, matching peak diurnal burning without time-of-day bias.</li>
+            <li><strong>Two-Stage Chaining:</strong> Terra (morning) chained through Aqua to achieve 2000–2002 coverage.</li>
+            <li><strong>Bias Factor Correction:</strong> Fixes systematic log-transform underestimation.</li>
+            <li><strong>No Post-2012 Blending:</strong> VIIRS alone defines the modern gold standard.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Success Test -->
+    <div class="slide" data-slide="4">
+      <div>
+        <div class="slide-tag">Verification & Validation</div>
+        <h2 class="slide-title">The Success Test: Zero Handover Steps</h2>
+      </div>
+
+      <div class="grid-2" style="margin-bottom: 20px;">
+        <div class="card">
+          <div class="highlight-stat" style="color: #ef4444;">+118%</div>
+          <div class="stat-label">Raw Data Discontinuity at 2012 Handover</div>
+          <p style="margin-top: 8px;">Unadjusted data creates a massive false surge when VIIRS joins in Jan 2012. R² correlation across sensors is only 0.48.</p>
+        </div>
+        <div class="card">
+          <div class="highlight-stat" style="color: var(--success);">&lt; 2%</div>
+          <div class="stat-label">EmberTrace Discontinuity (Splice Test PASS)</div>
+          <p style="margin-top: 8px;">Harmonized series passes splice checks at Jul 2002 and Jan 2012 with R² = 0.992. Completely seamless multi-decade baseline.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">✅ Validated Splice Points</div>
+        <div class="grid-3" style="text-align: center;">
+          <div><strong style="color: #a855f7;">Jul 2002</strong><br><span style="font-size: 12px; color: var(--text-muted);">Terra-chained → Aqua-calibrated</span></div>
+          <div><strong style="color: #38bdf8;">Jan 2012</strong><br><span style="font-size: 12px; color: var(--text-muted);">Aqua-calibrated → VIIRS native</span></div>
+          <div><strong style="color: #22c55e;">Mar 2023</strong><br><span style="font-size: 12px; color: var(--text-muted);">NOAA-21 joins VIIRS constellation</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: The Product UI -->
+    <div class="slide" data-slide="5">
+      <div>
+        <div class="slide-tag">Interactive Decision Support</div>
+        <h2 class="slide-title">EmberTrace Burning Activity Calendar</h2>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">🔥 313-Month Activity Heatmap</div>
+          <ul>
+            <li>Chronological 27 rows (2000–2026) × 12 columns.</li>
+            <li><strong>Sqrt Viridis Scaling:</strong> Compresses power-law fire spikes so seasonal patterns emerge.</li>
+            <li><strong>Zero vs Missing:</strong> True 0 fires rendered as hollow cells; missing data rendered as muted gray.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📊 Anomaly Calendar</div>
+          <ul>
+            <li>Diverging Blue-Orange ramp centered at <strong>1.0x historical median</strong>.</li>
+            <li>Blue (<1.0x suppressed) vs Red (>1.0x elevated).</li>
+            <li>Guarded against -Infinity using log-ratio clamping.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📥 Decision Features</div>
+          <ul>
+            <li>Interactive Leaflet map box-drawing with cell snapping.</li>
+            <li>Top 5 Historical Anomalies ranking table.</li>
+            <li>One-click publication export (SVG & 2x PNG) with synthetic watermark.</li>
+            <li>Full CSV export.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: User Personas & Impact -->
+    <div class="slide" data-slide="6">
+      <div>
+        <div class="slide-tag">Real-World Utility</div>
+        <h2 class="slide-title">Empowering Fire Decisions Across Disciplines</h2>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">🚒 Emergency Responders</div>
+          <p><strong>Core Question:</strong> "Is fire activity abnormal in my district right now?"</p>
+          <p style="margin-top: 8px;"><strong>EmberTrace Impact:</strong> Immediate anomaly ratios benchmark ongoing seasons against 26 years of history without waiting for post-season analysis.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🌲 Land & Forest Managers</div>
+          <p><strong>Core Question:</strong> "How have seasonal burning windows shifted over 25 years?"</p>
+          <p style="margin-top: 8px;"><strong>EmberTrace Impact:</strong> Multi-decade calendar reveals shifts in agricultural residue burning, dry-season onsets, and climate pressures.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🔬 Climate Scientists</div>
+          <p><strong>Core Question:</strong> "Where can I get a defensible, continuous satellite fire series?"</p>
+          <p style="margin-top: 8px;"><strong>EmberTrace Impact:</strong> Reproducible VIIRS-equivalent monthly time-series CSVs with full satellite provenance and metadata.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Scientific Transparency & Future Work -->
+    <div class="slide" data-slide="7">
+      <div>
+        <div class="slide-tag">Open Science & Next Steps</div>
+        <h2 class="slide-title">Scientific Transparency & Roadmap</h2>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🔍 Honest Limitations Disclosed</div>
+          <ul>
+            <li><strong>Demonstration Data:</strong> Architecture proven on synthetic fixtures and India regional archive data (18M detections). Full global archive pending.</li>
+            <li><strong>Terra Chained Uncertainty:</strong> Nov 2000 – Jun 2002 carries higher uncertainty due to morning-afternoon chaining; clearly labeled with interactive notice.</li>
+            <li><strong>Static Flare Masking:</strong> Industrial flare mask reduces NRT error to ±4%.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🗺️ Roadmap Beyond Hackathon</div>
+          <ul>
+            <li><strong>Global Pipeline Scaling:</strong> Automated Cloud Run processing across all global biomes.</li>
+            <li><strong>Land-Cover Specific Calibration:</strong> Separate regressions for boreal forests, savannas, and agricultural croplands.</li>
+            <li><strong>Daily Incomplete Month Index:</strong> Compare ongoing partial months against the exact day-of-month historical window.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 16px; color: var(--primary-light); font-weight: 700;">
+        Thank You! • Team EmberTrace • Ready for Judges' Questions
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Speaker Notes Drawer (Toggled with N key) -->
+  <div id="notes-drawer">
+    <div class="notes-header">
+      <span id="notes-slide-title">SPEAKER NOTES (SLIDE 1)</span>
+      <span>Press [N] to Toggle</span>
+    </div>
+    <div class="notes-content" id="notes-text">
+      Good afternoon everyone. For over a quarter of a century, NASA satellites have monitored Earth's fires from orbit. But if you try to analyze fire trends from 2000 to 2026 today, you run into a fundamental roadblock: the data is split across different satellite sensors with different resolutions and sensitivities. Today, we are proud to introduce EmberTrace—a platform that harmonizes 26 years of NASA FIRMS active fire hotspots into one unified, VIIRS-equivalent record where nobody can tell which satellite observed which year.
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <footer>
+    <div class="progress-text" id="progress">Slide 1 of 7</div>
+
+    <div class="nav-controls">
+      <button class="btn" onclick="toggleNotes()">📝 Notes (N)</button>
+      <button class="btn" onclick="prevSlide()">◀ Previous</button>
+      <button class="btn btn-primary" onclick="nextSlide()">Next ▶</button>
+      <button class="btn" onclick="toggleFullscreen()">⛶ Fullscreen (F)</button>
+    </div>
+  </footer>
+
+  <script>
+    const speakerNotes = {
+      1: "Good afternoon everyone. For over a quarter of a century, NASA satellites have monitored Earth's fires from orbit. But if you try to analyze fire trends from 2000 to 2026 today, you run into a fundamental roadblock: the data is split across different satellite sensors with different resolutions and sensitivities. Today, we are proud to introduce EmberTrace—a platform that harmonizes 26 years of NASA FIRMS active fire hotspots into one unified, VIIRS-equivalent record where nobody can tell which satellite observed which year.",
+      2: "Why can't you just plot FIRMS data over time? Because raw satellite counts are not ground truth. When VIIRS launched in 2012, fire detections suddenly doubled—not because the world was burning more, but because VIIRS pixels are 375 meters across compared to MODIS's 1 kilometer. Furthermore, the number of satellites in orbit fluctuated from one in 2000 to five in 2023. Raw counts create artificial jumps that mislead firefighters, forest managers, and climate researchers.",
+      3: "To solve this, our team engineered an end-to-end, 7-stage pipeline. We grid detections to 0.25-degree cells, filter non-vegetation sources using a custom NRT static-source mask, and normalize by the exact number of active satellites observing each month—accounting for known NASA sensor outages. To calibrate, we match Aqua and VIIRS on their shared afternoon overpasses between 2012 and 2019, before orbit drift occurred. And because log-scale regressions systematically underestimate totals, we incorporate a bias factor correction to ensure total energy and count parity across handovers.",
+      4: "Here is our core success test. On the left, raw data shows a severe 118% jump in 2012 that completely distorts multi-decadal trends. On the right, EmberTrace’s splice verification confirms zero artificial discontinuity across both July 2002 and January 2012 handovers. We never blend or average sensors after 2012—VIIRS alone sets the gold standard, and historical MODIS data is calibrated into VIIRS equivalence.",
+      5: "This science powers our web application. Users can select any region on an interactive map or enter bounding coordinates. The interface instantly generates two synchronized calendars: the Burning Activity Heatmap and the Anomaly Calendar. We enforce strict remote sensing data rules: true zero fires are rendered as hollow cells, never confused with missing satellite data. The anomaly view compares each month to its historical median, immediately identifying whether a fire season is normal, suppressed, or extreme.",
+      6: "EmberTrace directly answers the critical questions of three distinct groups: Emergency planners get instant anomaly metrics telling them if this season is dangerous compared to history. Land managers can track how burning seasons have shifted over a quarter-century. And climate scientists receive clean, reproducible, VIIRS-equivalent CSVs with complete metadata and data provenance.",
+      7: "In the spirit of open science, we believe in radical transparency. We explicitly label all demonstration data, provide interactive warnings on the higher uncertainty of the 2000–2002 Terra segment, and report the residual error of our industrial flare masking. EmberTrace bridges 26 years of NASA Earth observations into one seamless, trustworthy view. Thank you, and we welcome your questions!"
+    };
+
+    let currentSlide = 1;
+    const totalSlides = 7;
+
+    function showSlide(n) {
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      const active = document.querySelector(`.slide[data-slide="${n}"]`);
+      if (active) active.classList.add('active');
+
+      document.getElementById('progress').innerText = `Slide ${n} of ${totalSlides}`;
+      document.getElementById('notes-slide-title').innerText = `SPEAKER NOTES (SLIDE ${n})`;
+      document.getElementById('notes-text').innerText = speakerNotes[n] || "";
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    }
+
+    function toggleNotes() {
+      document.getElementById('notes-drawer').classList.toggle('open');
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { nextSlide(); }
+      else if (e.key === 'ArrowLeft') { prevSlide(); }
+      else if (e.key.toLowerCase() === 'n') { toggleNotes(); }
+      else if (e.key.toLowerCase() === 'f') { toggleFullscreen(); }
+    });
+
+    // Timer Logic
+    let timerSeconds = 0;
+    let timerInterval = null;
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(timerSeconds / 60);
+      const secs = timerSeconds % 60;
+      const str = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} / 05:00`;
+      const el = document.getElementById('timer');
+      el.innerText = str;
+
+      if (timerSeconds >= 270) { el.style.color = '#ef4444'; } // Red at 4:30
+      else if (timerSeconds >= 210) { el.style.color = '#f59e0b'; } // Yellow at 3:30
+      else { el.style.color = '#38bdf8'; }
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('timer-toggle');
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        btn.innerText = 'Resume';
+      } else {
+        timerInterval = setInterval(() => {
+          timerSeconds++;
+          updateTimerDisplay();
+        }, 1000);
+        btn.innerText = 'Pause';
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerSeconds = 0;
+      updateTimerDisplay();
+      document.getElementById('timer-toggle').innerText = 'Start';
+    }
+  </script>
+</body>
+</html>
