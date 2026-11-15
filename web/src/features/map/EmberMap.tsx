@@ -51,9 +51,14 @@ function DrawControls({
 
     import('leaflet-draw').then(() => {
       import('leaflet').then((L) => {
+        // leaflet-draw attaches L.Draw to the global `window.L`. In the production build the
+        // imported module is a copy taken before that, so it has no L.Draw: use the global.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const LDraw = L as any;
-        if (!LDraw.Control?.Draw) return;
+        const LDraw = ((window as any).L ?? L) as any;
+        if (!LDraw.Control?.Draw || !LDraw.Draw?.Rectangle) {
+          console.error('leaflet-draw did not load: drawing an area is unavailable');
+          return;
+        }
 
         const drawControl = new LDraw.Control.Draw({
           draw: {
