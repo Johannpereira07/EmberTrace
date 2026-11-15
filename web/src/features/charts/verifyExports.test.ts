@@ -1,20 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
-import fs from 'fs';
-import path from 'path';
 import { CalendarHeatmap } from './CalendarHeatmap';
 import { AnomalyHeatmap } from './AnomalyHeatmap';
 import type { CalendarApiResponse } from './types';
+import normalDataJson from '../../../../contracts/fixtures/normal.json';
+import sparseDataJson from '../../../../contracts/fixtures/sparse.json';
 
-// Load normal and sparse fixtures
-const normalData = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../../../../contracts/fixtures/normal.json'), 'utf-8')
-) as CalendarApiResponse;
-
-const sparseData = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../../../../contracts/fixtures/sparse.json'), 'utf-8')
-) as CalendarApiResponse;
+const normalData = normalDataJson as unknown as CalendarApiResponse;
+const sparseData = sparseDataJson as unknown as CalendarApiResponse;
 
 // Synthetic variant
 const syntheticNormalData: CalendarApiResponse = {
@@ -26,14 +20,8 @@ const syntheticNormalData: CalendarApiResponse = {
 };
 
 describe('Export Verification for Normal & Sparse Fixtures', () => {
-  const exportDir = path.resolve(__dirname, '../../../../out/exports');
-  if (!fs.existsSync(exportDir)) {
-    fs.mkdirSync(exportDir, { recursive: true });
-  }
-
   it('verifies Normal Calendar Heatmap export', () => {
     const svg = renderToString(React.createElement(CalendarHeatmap, { data: normalData }));
-    fs.writeFileSync(path.join(exportDir, 'calendar-normal.svg'), svg, 'utf-8');
 
     // 1. Legend is present
     expect(svg).toContain('Fire Detections:');
@@ -63,7 +51,6 @@ describe('Export Verification for Normal & Sparse Fixtures', () => {
 
   it('verifies Normal Anomaly Heatmap export', () => {
     const svg = renderToString(React.createElement(AnomalyHeatmap, { data: normalData }));
-    fs.writeFileSync(path.join(exportDir, 'anomaly-normal.svg'), svg, 'utf-8');
 
     // 1. Legend is present with end caps
     expect(svg).toContain('Anomaly vs Median:');
@@ -85,7 +72,6 @@ describe('Export Verification for Normal & Sparse Fixtures', () => {
 
   it('verifies Sparse Calendar Heatmap export', () => {
     const svg = renderToString(React.createElement(CalendarHeatmap, { data: sparseData }));
-    fs.writeFileSync(path.join(exportDir, 'calendar-sparse.svg'), svg, 'utf-8');
 
     expect(svg).toContain('Fire Detections:');
     expect(svg).toContain('Coverage:');
@@ -95,7 +81,6 @@ describe('Export Verification for Normal & Sparse Fixtures', () => {
 
   it('verifies Sparse Anomaly Heatmap export', () => {
     const svg = renderToString(React.createElement(AnomalyHeatmap, { data: sparseData }));
-    fs.writeFileSync(path.join(exportDir, 'anomaly-sparse.svg'), svg, 'utf-8');
 
     expect(svg).toContain('Anomaly vs Median:');
     expect(svg).toContain('Coverage:');
