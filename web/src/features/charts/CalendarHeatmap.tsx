@@ -209,24 +209,42 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
                   {row.cells.map((cell, cIdx) => {
                     const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
                     const isSelected = isSelectedYear && selectedMonth === cell.month;
-                    const colorInfo = cell.isOutOfRange
-                      ? { fill: '#0f172a', stroke: '#1e293b', isHollow: false }
-                      : getActivityColor(cell.value, effectiveMax);
+                    const isBeforeStart = cell.monthStr < '2000-11';
+                    const isTrulyOutOfRange = cell.isOutOfRange && !isBeforeStart;
+                    const isUnavailable = !isTrulyOutOfRange && (cell.state === 'unavailable' || cell.value === null || isBeforeStart);
+                    const isZero = !isTrulyOutOfRange && !isUnavailable && (cell.isZero || cell.value === 0);
 
-                    const isDarkFill = !colorInfo.isHollow && cell.value !== null && cell.value > effectiveMax * 0.25;
-                    const textFill = isDarkFill ? '#090d16' : '#f8fafc';
-                    const cellFill = colorInfo.isHollow ? '#090d16' : colorInfo.fill;
-                    const cellStroke = isSelected ? '#38bdf8' : (colorInfo.isHollow ? '#475569' : colorInfo.stroke);
+                    let cellFill = 'none';
+                    let cellStroke = 'none';
+                    let textFill = '#f8fafc';
+
+                    if (isTrulyOutOfRange) {
+                      cellFill = 'none';
+                      cellStroke = 'none';
+                    } else if (isUnavailable) {
+                      cellFill = 'url(#cal-missing-data-hatch)';
+                      cellStroke = isSelected ? '#38bdf8' : '#555555';
+                    } else if (isZero) {
+                      cellFill = '#ffffff';
+                      cellStroke = isSelected ? '#38bdf8' : '#334155';
+                      textFill = '#090d16';
+                    } else {
+                      const colorInfo = getActivityColor(cell.value, effectiveMax);
+                      const isDarkFill = cell.value !== null && cell.value > effectiveMax * 0.25;
+                      textFill = isDarkFill ? '#090d16' : '#f8fafc';
+                      cellFill = colorInfo.fill;
+                      cellStroke = isSelected ? '#38bdf8' : colorInfo.stroke;
+                    }
 
                     return (
                       <g
                         key={cell.monthStr}
                         transform={`translate(${xPos}, 0)`}
-                        style={{ cursor: cell.isOutOfRange ? 'default' : 'pointer' }}
-                        onClick={() => !cell.isOutOfRange && onCellClick?.(cell)}
-                        onMouseEnter={(e) => !cell.isOutOfRange && onCellHover?.(cell, e)}
+                        style={{ cursor: isTrulyOutOfRange ? 'default' : 'pointer' }}
+                        onClick={() => !isTrulyOutOfRange && onCellClick?.(cell)}
+                        onMouseEnter={(e) => !isTrulyOutOfRange && onCellHover?.(cell, e)}
                         onMouseLeave={() => onCellHover?.(null)}
-                        tabIndex={cell.isOutOfRange ? -1 : 0}
+                        tabIndex={isTrulyOutOfRange ? -1 : 0}
                         role="gridcell"
                         aria-label={cell.ariaLabel}
                       >
@@ -239,25 +257,25 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
                           ry="2.5"
                           fill={cellFill}
                           stroke={cellStroke}
-                          strokeWidth={isSelected ? '2' : '1'}
+                          strokeWidth={isSelected ? '2' : (isTrulyOutOfRange ? '0' : '1')}
                         />
 
-                        {showSensorMarkers && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
+                        {showSensorMarkers && !isTrulyOutOfRange && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
 
-                        {cell.isProvisional && !cell.isOutOfRange && (
+                        {cell.isProvisional && !isTrulyOutOfRange && (
                           <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b">
                             <title>Provisional NRT</title>
                           </rect>
                         )}
 
-                        {!cell.isOutOfRange && cell.value !== null && (
+                        {!isTrulyOutOfRange && !isUnavailable && cell.value !== null && (
                           <text
                             x={CELL_WIDTH / 2}
                             y={CELL_HEIGHT / 2 + 3.5}
                             textAnchor="middle"
                             fontSize="9.5"
-                            fontWeight={colorInfo.isHollow ? '400' : '600'}
-                            fill={colorInfo.isHollow ? '#64748b' : textFill}
+                            fontWeight={isZero ? '400' : '600'}
+                            fill={isZero ? '#090d16' : textFill}
                           >
                             {cell.value === 0 ? '0' : formatCount(cell.value)}
                           </text>
@@ -348,6 +366,10 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
                   <stop key={idx} offset={`${(idx / (VIRIDIS_STOPS.length - 1)) * 100}%`} stopColor={color} />
                 ))}
               </linearGradient>
+              <pattern id="cal-missing-data-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#e5e5e5" />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#555555" strokeWidth="1.2" />
+              </pattern>
             </defs>
 
             {/* Embedded SVG Legend (Export & Screen) */}
@@ -368,7 +390,7 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
                 </text>
 
                 {/* 0 (Hollow) swatch */}
-                <rect x="100" y="-10" width="13" height="13" rx="2" fill="#090d16" stroke="#64748b" strokeWidth="1.5" />
+                <rect x="100" y="-10" width="13" height="13" rx="2" fill="#ffffff" stroke="#334155" strokeWidth="1" />
                 <text x="118" y="0" fontSize="10" fill="#94a3b8">0 (Hollow)</text>
 
                 {/* Viridis Ramp */}
@@ -376,8 +398,8 @@ export const CalendarHeatmap = forwardRef<ChartExportRef, CalendarHeatmapProps>(
                 <rect x="192" y="-9" width="110" height="11" rx="2" fill="url(#cal-viridis-ramp)" stroke="#334155" strokeWidth="1" />
                 <text x="308" y="0" fontSize="10" fontWeight="600" fill="#e2e8f0">{Math.round(effectiveMax).toLocaleString()}+</text>
 
-                {/* Missing / Unavailable */}
-                <rect x="365" y="-10" width="13" height="13" rx="2" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="1" />
+                {/* Missing / Unavailable Hatch Swatch */}
+                <rect x="365" y="-10" width="13" height="13" rx="2" fill="url(#cal-missing-data-hatch)" stroke="#555555" strokeWidth="1" />
                 <text x="383" y="0" fontSize="10" fill="#94a3b8">No Data</text>
 
                 {/* Provisional NRT */}

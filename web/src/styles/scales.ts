@@ -52,11 +52,12 @@ export const ANOMALY_PALETTE = {
 
 export const SPECIAL_CELL_COLORS = {
   zeroHollowFill: '#ffffff',
-  zeroOutlineStroke: '#94a3b8',
-  unavailableFill: '#e2e8f0',
-  unavailableStroke: '#cbd5e1',
-  outOfRangeFill: '#f8fafc',
-  outOfRangeStroke: '#e2e8f0',
+  zeroOutlineStroke: '#334155',
+  unavailableFill: '#e5e5e5',
+  unavailableHatchStroke: '#555555',
+  unavailableStroke: '#555555',
+  outOfRangeFill: 'none',
+  outOfRangeStroke: 'none',
   notEnoughHistoryFill: '#f1f5f9',
 };
 

@@ -41,8 +41,8 @@ export const ChartLegend: React.FC<LegendProps> = ({
                   display: 'inline-block',
                   width: '14px',
                   height: '14px',
-                  backgroundColor: '#090d16',
-                  border: '1.5px solid #64748b',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid #334155',
                   borderRadius: '2px',
                 }}
               />
@@ -62,6 +62,19 @@ export const ChartLegend: React.FC<LegendProps> = ({
                 title="Square-root scaled Viridis ramp"
               />
               <span className="text-slate-200 font-semibold">{Math.round(maxCount).toLocaleString()}+</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-2">
+              <svg width="14" height="14" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                <defs>
+                  <pattern id="legend-hatch-act" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="6" height="6" fill="#e5e5e5" />
+                    <line x1="0" y1="0" x2="0" y2="6" stroke="#555555" strokeWidth="1.2" />
+                  </pattern>
+                </defs>
+                <rect width="14" height="14" rx="2" fill="url(#legend-hatch-act)" stroke="#555555" strokeWidth="1" />
+              </svg>
+              <span className="text-slate-400">No Data</span>
             </div>
           </div>
         ) : (
@@ -85,6 +98,19 @@ export const ChartLegend: React.FC<LegendProps> = ({
                 ))}
               </div>
               <span className="text-orange-400 font-medium">&gt;=4x</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 ml-2">
+              <svg width="14" height="14" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                <defs>
+                  <pattern id="legend-hatch-ano" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                    <rect width="6" height="6" fill="#e5e5e5" />
+                    <line x1="0" y1="0" x2="0" y2="6" stroke="#555555" strokeWidth="1.2" />
+                  </pattern>
+                </defs>
+                <rect width="14" height="14" rx="2" fill="url(#legend-hatch-ano)" stroke="#555555" strokeWidth="1" />
+              </svg>
+              <span className="text-slate-400">No Data</span>
             </div>
           </div>
         )}

@@ -66,6 +66,7 @@ describe('Exported SVG Legend & Metadata Content', () => {
     expect(html).toContain('No Data');
     expect(html).toContain('Provisional (NRT)');
     expect(html).toContain('cal-viridis-ramp');
+    expect(html).toContain('cal-missing-data-hatch');
 
     // Watermark & metadata inside SVG
     expect(html).toContain('DEMONSTRATION DATA (SYNTHETIC)');
@@ -83,6 +84,8 @@ describe('Exported SVG Legend & Metadata Content', () => {
     expect(html).toContain('Anomaly vs Median:');
     expect(html).toContain('&lt;=0.25x');
     expect(html).toContain('&gt;=4x');
+    expect(html).toContain('No Data');
+    expect(html).toContain('ano-missing-data-hatch');
     expect(html).toContain('n/c (partial)');
     expect(html).toContain('– (no baseline)');
 
