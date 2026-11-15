@@ -112,14 +112,16 @@ Yearly overlap ratio: Aqua→VIIRS ranges 7.47 to 8.51 (about +10% drift 2012 to
 - [x] Re-run 12-vs-12 audit for 2018-04 and confirm one consistent number (`×0.691` on `viirs_count_norm` vs `×0.683` on `snpp_norm`, confirmed in `out/real_report/viirs_satellite_composition.csv`)
 
 ## Notes for teammates
-- **Person 1 (ingest):** no change needed. `v : I audited viirs_count_norm (S-NPP + NOAA-20 + NOAA-21 divided by platform_weight) against an S-NPP-only normalized series (snpp_norm)
-
-Your platform_weight normalization in aggregate.py works: viirs_count_norm agrees with snpp_norm within 0.1%–1.5% from 2018–2025, and the Aqua→VIIRS factor changes by only 0.045% (7.9791 vs 7.9755).
-Recommendation: keep the PRD's combined normalized VIIRS series (viirs_count_norm), do not switch to S-NPP-only. S-NPP stopped producing FIRMS data on 2026-11-02, so an S-NPP-only series would go NaN from Nov 2026 onward, whereas the combined normalized series continues seamlessly with NOAA-20 + NOAA-21.
-One caveat for Limitations: In 2023, NOAA-21 detected 23.5% fewer fires than S-NPP (N21/SNPP = 0.765 during spin-up), which pulls the 3-satellite average down by ~2% in 2023 (12m step ×0.784 vs ×0.800 on S-NPP 
-alone)iirs_count_norm` is consistent with S-NPP-only. Keep the combined VIIRS series.
-- **Person 3 (export/API):** `pipeline/export.py` line 25, `DEFAULT_VERSION = "0.1-calibration-pending"`, should be updated now that the calibration fix is in. `calibration.json` now includes `"method": "ratio_of_totals"` with `slope` and `intercept` as `null`. A zero median now returns blank, not `inf`.
+- **Person 1 (ingest & README):** No ingest code changes needed. `viirs_count_norm` (`S-NPP + NOAA-20 + NOAA-21` divided by `platform_weight`) agrees with an `S-NPP`-only normalized series within `0.1%–1.5%` from 2018–2025, and the Aqua→VIIRS factor changes by only `0.045%` (`7.9791` vs `7.9755`). Keep the combined normalized VIIRS series (`S-NPP` stopped on `2026-11-02`). For the README "How to run" section, add:
+  ```bash
+  python science/hero_figure.py --run out --out science/figures/hero.png
+  python science/real_report.py --run out --out out/real_report
+  python science/splice_placebo.py --run out
+  ```
+- **Person 3 (export/API & PR to `main`):** Branch `p0/planning-folder-add` is pushed with `data/cell_month.parquet`, `data/meta.json` (`0.3-monthly-ratio`), and `data/calibration.json` (`"method": "monthly_ratio"`, `"monthly_factors"`, `"pooled_months": [6, 7, 8, 9]`, plus `"factor"`, `"ratio_y_to_x"`, `"window"`). Please update `DEFAULT_VERSION = "0.3-monthly-ratio"` in `pipeline/export.py` (line 25) so re-running `make export` doesn't overwrite the version string, and open a PR merging `p0/planning-folder-add` into `main`. A zero median now returns blank (`NaN`), never `inf`.
+- **Person 4 (frontend explainer):** Plain-language harmonization explainer (`CAL-10`) is at `docs/explainer.md` (§1).
+- **Person 5 (slides):** Both Showcase slides ("How Harmonization Works" + `science/figures/hero.png`, and "Limitations") are at `docs/explainer.md` (§2).
 
 ## Notes
-- Go/no-go on real versus synthetic data for the demo is decided Sunday 12:00 and is separate from the calibration fix.
-- Two audit runs gave different 12-vs-12 values at 2018-04 for the normalized VIIRS series (×0.859 in the raw log vs ×0.691 in the report table). 2023-03 matched (×0.784). Both are within about ±1.3σ of the placebo spread, but the exact figure should be re-checked before it appears on a slide.
+- Go/no-go decision (Sunday 12:00): **GO with real data**, using `0.3-monthly-ratio` (calendar-month factors with Jun–Sep pooled) and reporting the limitations in `docs/11-calibration-report.md` and `docs/explainer.md`.
+- Verified why two earlier logs differed: an unexecuted text block was printed before background task `task-310` finished. The true reproduced numbers are in `out/real_report/report.md` and `docs/11-calibration-report.md`.
