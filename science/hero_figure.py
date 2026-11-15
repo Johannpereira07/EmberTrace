@@ -94,10 +94,13 @@ def build_hero(run_dir: Path, out_path: Path) -> None:
 
     # Common formatting & vertical handover markers on both panels
     for ax in (ax1, ax2):
-        for h_date, h_lbl in [("2002-07-01", "2002-07 (Aqua)"), ("2012-01-01", "2012-01 (VIIRS)")]:
+        for h_date, h_lbl, y_frac in [("2002-07-01", "2002-07 (Aqua)", 0.42),
+                                      ("2012-01-01", "2012-01 (VIIRS)", 0.78)]:
             ts = pd.Timestamp(h_date)
             ax.axvline(ts, color=C_LINE, ls="--", lw=1.0, alpha=0.75)
-            ax.text(ts + pd.Timedelta(days=90), ymax * 0.94, h_lbl, fontsize=8.5, color=C_LINE, rotation=0, va="top")
+            ax.text(ts + pd.Timedelta(days=90), ymax * y_frac, h_lbl,
+                    fontsize=8.5, color=C_LINE, rotation=0, va="top",
+                    bbox=dict(boxstyle="round,pad=0.18", fc="#FFFFFF", ec="none", alpha=0.8))
         ax.set_ylim(0, ymax)
         ax.set_xlim(pd.Timestamp("2000-06-01"), pd.Timestamp("2026-11-01"))
         ax.xaxis.set_major_locator(mdates.YearLocator(4))
