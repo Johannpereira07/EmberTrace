@@ -13,6 +13,7 @@ import {
   useStoryData,
   formatCount,
   yearOf,
+  factorRange,
   SOURCE_COLOR,
   SOURCE_LABEL,
   type StoryData,
@@ -268,7 +269,7 @@ function Story({ data }: { data: StoryData }) {
               title="EmberTrace VIIRS-equivalent detections per year, per satellite"
               summary={`Yearly detections over India on one VIIRS-equivalent scale. In the VIIRS years, converted Aqua stays within ${f.check?.maxPct ?? '?'}% of VIIRS.`}
               years={data.years}
-              value={(y) => y.ratio_converted}
+              value={(y) => y.harmonized}
               color={(y) => SOURCE_COLOR[mainSource(y)]}
               legend={legendFor(ALL_SOURCES)}
               overlay={{ value: (y) => y.aqua_converted, color: '#dfe6f3', label: 'Aqua, converted the same way' }}
@@ -279,11 +280,12 @@ function Story({ data }: { data: StoryData }) {
               }
               footnote={
                 <>
-                  MODIS years use the overlap ratio from the pipeline's calibration: Aqua ×
-                  {data.conversion.aqua_to_viirs.toFixed(2)} (fitted {yearOf(data.conversion.aqua_to_viirs_window[0])}–
-                  {yearOf(data.conversion.aqua_to_viirs_window[1])}), Terra ×{data.conversion.terra_to_aqua.toFixed(2)} to
-                  Aqua (fitted {yearOf(data.conversion.terra_to_aqua_window[0])}–
-                  {yearOf(data.conversion.terra_to_aqua_window[1])}).
+                  MODIS years use the pipeline's calibration
+                  {data.conversion.method === 'monthly_ratio' ? ', one factor per calendar month' : ''}: Aqua ×
+                  {factorRange(data.conversion.aqua_to_viirs_range)} (fitted{' '}
+                  {yearOf(data.conversion.aqua_to_viirs_window[0])}–{yearOf(data.conversion.aqua_to_viirs_window[1])}),
+                  Terra ×{factorRange(data.conversion.terra_to_aqua_range)} to Aqua (fitted{' '}
+                  {yearOf(data.conversion.terra_to_aqua_window[0])}–{yearOf(data.conversion.terra_to_aqua_window[1])}).
                 </>
               }
             />
