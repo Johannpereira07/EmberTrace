@@ -79,3 +79,4 @@
 
 ### **Q4: "Why did you restrict your calibration window to 2012–2019?"**
 > **Answer:** *"In 2021 and 2022, NASA ceased orbit maintenance maneuvers for Aqua and Terra, causing their orbits to drift and overpass times to shift. Calibrating on post-2020 data would introduce orbital drift noise. Restricting calibration to 2012–2019 guarantees a clean, stable solar geometry comparison."*
+

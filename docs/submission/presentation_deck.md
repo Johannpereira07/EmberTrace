@@ -147,3 +147,4 @@
 
 > **Speaker Note (4:25 – 5:00):**  
 > *"In the spirit of open science, we believe in radical transparency. We explicitly label all demonstration data, provide interactive warnings on the higher uncertainty of the 2000–2002 Terra segment, and report the residual error of our industrial flare masking. EmberTrace bridges 26 years of NASA Earth observations into one seamless, trustworthy view. Thank you, and we welcome your questions!"*
+
