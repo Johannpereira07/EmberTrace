@@ -1,0 +1,273 @@
+/**
+ * EmberTrace – optional guided tour of the explorer.
+ * Steps point at elements marked `data-tour="<topic>"`; a step whose element is not on screen is skipped.
+ * First visit: a small, dismissible prompt offers the tour. The header "Guide" button restarts it.
+ */
+
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { GUIDE, TOUR_ORDER, GuideTopic } from './content';
+
+const SEEN_KEY = 'embertrace.tour.seen';
+const PAD = 8;
+
+interface TourState {
+  start: () => void;
+}
+
+const TourContext = createContext<TourState>({ start: () => {} });
+
+function target(topic: GuideTopic): HTMLElement | null {
+  const el = document.querySelector<HTMLElement>(`[data-tour="${topic}"]`);
+  return el && el.getBoundingClientRect().height > 0 ? el : null;
+}
+
+function markSeen() {
+  try {
+    window.localStorage.setItem(SEEN_KEY, '1');
+  } catch {
+    /* private mode: the prompt may show again next visit */
+  }
+}
+
+function wasSeen(): boolean {
+  try {
+    return window.localStorage.getItem(SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+export function TourProvider({ ready, children }: { ready: boolean; children: React.ReactNode }) {
+  const [steps, setSteps] = useState<GuideTopic[] | null>(null);
+  const [index, setIndex] = useState(0);
+  const [prompt, setPrompt] = useState(false);
+  const returnFocus = useRef<HTMLElement | null>(null);
+
+  // Offer the tour once, after the first calendar has loaded (or failed), so its steps exist.
+  useEffect(() => {
+    if (ready && !wasSeen()) setPrompt(true);
+  }, [ready]);
+
+  const start = useCallback(() => {
+    const available = TOUR_ORDER.filter((t) => target(t));
+    if (available.length === 0) return;
+    returnFocus.current = document.activeElement as HTMLElement | null;
+    markSeen();
+    setPrompt(false);
+    setIndex(0);
+    setSteps(available);
+  }, []);
+
+  const close = useCallback(() => {
+    setSteps(null);
+    returnFocus.current?.focus?.();
+  }, []);
+
+  return (
+    <TourContext.Provider value={{ start }}>
+      {children}
+      {prompt && !steps && (
+        <TourPrompt
+          onStart={start}
+          onDismiss={() => {
+            markSeen();
+            setPrompt(false);
+          }}
+        />
+      )}
+      {steps && <TourStep steps={steps} index={index} setIndex={setIndex} onClose={close} />}
+    </TourContext.Provider>
+  );
+}
+
+/** Header button that (re)starts the tour. */
+export function TourButton() {
+  const { start } = useContext(TourContext);
+  return (
+    <button
+      type="button"
+      onClick={start}
+      className="whitespace-nowrap text-xs px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white transition cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+    >
+      Guide
+    </button>
+  );
+}
+
+function TourPrompt({ onStart, onDismiss }: { onStart: () => void; onDismiss: () => void }) {
+  return (
+    <div
+      role="region"
+      aria-label="Tour offer"
+      className="fixed z-[2000] bottom-4 right-4 left-4 sm:left-auto sm:w-80 p-4 rounded-2xl bg-slate-900 border border-sky-500/40 shadow-2xl text-sm text-slate-200"
+    >
+      <p className="font-semibold text-white">New here?</p>
+      <p className="mt-1 text-slate-300 text-[13px]">A one-minute tour shows what each part of this page does.</p>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={onStart}
+          className="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs hover:bg-sky-400 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+        >
+          Take the tour
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+        >
+          No thanks
+        </button>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">You can open it later from "Guide" at the top.</p>
+    </div>
+  );
+}
+
+function TourStep({
+  steps,
+  index,
+  setIndex,
+  onClose,
+}: {
+  steps: GuideTopic[];
+  index: number;
+  setIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  const topic = steps[index];
+  const entry = GUIDE[topic];
+  const last = index === steps.length - 1;
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const card = useRef<HTMLDivElement>(null);
+
+  // Bring the step's element into view and follow it while the page scrolls or resizes.
+  useLayoutEffect(() => {
+    const el = target(topic);
+    if (!el) return;
+    // A tall element starts at the top of the screen, so its beginning (headings, legend) is in view.
+    const tall = el.getBoundingClientRect().height > window.innerHeight * 0.6;
+    el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    const update = () => setRect(el.getBoundingClientRect());
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true); // capture: the explorer scrolls inner panels
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [topic]);
+
+  useEffect(() => {
+    card.current?.focus();
+  }, [index]);
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') onClose();
+    else if (e.key === 'ArrowRight' && !last) setIndex(index + 1);
+    else if (e.key === 'ArrowLeft' && index > 0) setIndex(index - 1);
+    else if (e.key === 'Tab') {
+      // Keep keyboard focus inside the tour card while it is open.
+      const items = card.current?.querySelectorAll<HTMLElement>('button');
+      if (!items || items.length === 0) return;
+      const first = items[0];
+      const end = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === card.current)) {
+        e.preventDefault();
+        end.focus();
+      } else if (!e.shiftKey && document.activeElement === end) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  // Card below the element if there is room, else above, else in the bottom-right corner (tall
+  // elements such as the calendar). On phones it always sits at the bottom.
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const cardW = 340;
+  const cardH = 220;
+  let style: React.CSSProperties = { left: 16, right: 16, bottom: 16 };
+  if (rect && vw >= 640) {
+    const left = Math.min(Math.max(16, rect.left), vw - cardW - 16);
+    if (rect.bottom + PAD + cardH < vh) style = { left, top: rect.bottom + PAD + 8, width: cardW };
+    else if (rect.top - PAD - cardH > 0) style = { left, bottom: vh - rect.top + PAD + 8, width: cardW };
+    else style = { right: 24, bottom: 24, width: cardW };
+  }
+
+  return (
+    <div className="fixed inset-0 z-[2000]" onKeyDown={onKeyDown}>
+      {/* Blocks clicks on the page; the spotlight's shadow dims everything but the step's element. */}
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      {rect && (
+        <div
+          aria-hidden="true"
+          className="absolute rounded-2xl ring-2 ring-sky-400 pointer-events-none"
+          style={{
+            left: rect.left - PAD,
+            top: rect.top - PAD,
+            width: rect.width + PAD * 2,
+            height: rect.height + PAD * 2,
+            boxShadow: '0 0 0 9999px rgba(2, 6, 23, 0.72)',
+            transition: reducedMotion() ? undefined : 'all 200ms ease',
+          }}
+        />
+      )}
+      <div
+        ref={card}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tour-title"
+        aria-describedby="tour-body"
+        tabIndex={-1}
+        className="absolute p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl text-slate-200 focus:outline-none"
+        style={style}
+      >
+        <p className="text-[11px] font-mono text-sky-300">
+          Step {index + 1} of {steps.length}
+        </p>
+        <h2 id="tour-title" className="mt-1 text-sm font-bold text-white">
+          {entry.title}
+        </h2>
+        <p id="tour-body" className="mt-1.5 text-[13px] leading-relaxed text-slate-300">
+          {entry.tour}
+        </p>
+        {last && (
+          <p className="mt-2 text-[12px] text-slate-400">
+            Every section has a "What's this?" link, and "Explanations" at the top opens them all.
+          </p>
+        )}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+          >
+            {last ? 'Close' : 'Skip tour'}
+          </button>
+          <div className="flex gap-2">
+            {index > 0 && (
+              <button
+                type="button"
+                onClick={() => setIndex(index - 1)}
+                className="px-3 py-1.5 rounded-lg text-xs text-slate-200 border border-slate-700 hover:bg-slate-800 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+              >
+                Back
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => (last ? onClose() : setIndex(index + 1))}
+              className="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs hover:bg-sky-400 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+            >
+              {last ? 'Done' : 'Next'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -5,16 +5,17 @@
 
 import React, { useState } from 'react';
 
-const PLACEHOLDER_TEXT = `EmberTrace harmonizes fire detection data from three satellite sensors:
-Terra MODIS (Nov 2000 – present), Aqua MODIS (Jul 2002 – present), and VIIRS (Jan 2012 – present).
+const PLACEHOLDER_TEXT = `EmberTrace combines fire detections from three satellite series: Terra MODIS,
+Aqua MODIS and VIIRS (S-NPP, NOAA-20 and NOAA-21). MODIS and VIIRS count fires differently,
+so their counts cannot be compared directly.
 
-Counts from earlier sensors are calibrated to VIIRS-equivalent values using a linear regression
-fit over the 2012–2019 overlap period — so the values before and after each sensor transition
-are directly comparable.
+Each older series is converted to VIIRS-equivalent counts with one factor: total VIIRS detections
+divided by total Aqua detections over years when both observed the same places (and Terra to Aqua
+the same way). A month with no fires stays at zero. One factor is fitted for the whole region,
+offline; it is never refitted for your selected area.
 
-Months before Jul 2002 are "chained" via Aqua calibration and carry slightly higher uncertainty.
-
-Provisional (near real-time) months are based on preliminary data and may change.`;
+The earliest months, before Aqua flew, are converted in two steps (Terra to Aqua to VIIRS) and are
+the least certain. Provisional (near real-time) months use preliminary data and may change.`;
 
 export function ExplainerPanel() {
   const [open, setOpen] = useState(false);
