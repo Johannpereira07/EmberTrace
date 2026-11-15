@@ -36,7 +36,7 @@ def _prep(cm, x_col, y_col, window, min_rows=30, min_months=12):
     """Common filtering for all fit forms. Returns both_df in original space."""
     both = cm.dropna(subset=[x_col, y_col]).copy()
     # month may be Period (in-memory) or str (read back from CSV)
-    if both["month"].dtype == object:
+    if not isinstance(both["month"].dtype, pd.PeriodDtype):
         both["month"] = pd.PeriodIndex(both["month"], freq="M")
     both = both[(both["month"] >= pd.Period(window[0], "M")) &
                 (both["month"] <= pd.Period(window[1], "M"))]
@@ -202,7 +202,8 @@ def holdout_check(cm, x_col, y_col, window, train_fraction=0.7,
                   apply_fn=apply_log_line, method="monthly_ratio"):
     """Fit on the first part of the window, test on the rest (monthly AOI totals)."""
     cm = cm.copy()
-    if cm["month"].dtype == object:
+    # month may be Period (in-memory) or str (read back from CSV)
+    if not isinstance(cm["month"].dtype, pd.PeriodDtype):
         cm["month"] = pd.PeriodIndex(cm["month"], freq="M")
     months = sorted(cm.dropna(subset=[x_col, y_col])["month"].unique())
     months = [m for m in months if pd.Period(window[0], "M") <= m <= pd.Period(window[1], "M")]

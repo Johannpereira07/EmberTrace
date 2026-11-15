@@ -5,7 +5,7 @@ import pandas as pd
 def calendar(cm):
     s = cm.groupby("month")["harmonized_count"].sum(min_count=1).dropna()
     months = s.index
-    if months.dtype == object:
+    if not isinstance(months.dtype, pd.PeriodDtype):
         months = pd.PeriodIndex(months, freq="M")
     cal = pd.DataFrame({"year": months.year, "m": months.month, "v": s.values})
     mat = cal.pivot(index="year", columns="m", values="v").round(1)
