@@ -6,9 +6,9 @@
 
 import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { CalendarApiResponse, GridCell, ChartExportRef, NoticeTopic } from './types';
-import { buildGridModel, MONTH_NAMES } from './cellModel';
+import { buildGridModel, MONTH_NAMES, getMonthRange, formatMonthLabel } from './cellModel';
 import { RowLabel, HandoverEdge, ROW_LABEL_WIDTH } from './SourceMarks';
-import { getAnomalyColor, formatAnomaly, SPECIAL_CELL_COLORS } from '../../styles/scales';
+import { getAnomalyColor, formatAnomaly, SPECIAL_CELL_COLORS, ANOMALY_STOPS } from '../../styles/scales';
 
 export interface AnomalyHeatmapProps {
   data: CalendarApiResponse | null;
@@ -53,9 +53,21 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
     const LEFT_LABEL_WIDTH = ROW_LABEL_WIDTH;
     const TOP_HEADER_HEIGHT = 34;
 
-    const gridWidth = LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 20;
+    const gridWidth = LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 60;
     const numRows = model.rows.length;
-    const gridHeight = TOP_HEADER_HEIGHT + numRows * (CELL_HEIGHT + CELL_GAP) + 45;
+    const rowsHeight = TOP_HEADER_HEIGHT + numRows * (CELL_HEIGHT + CELL_GAP);
+    const LEGEND_TOP = rowsHeight + 20;
+    const LEGEND_SECTION_HEIGHT = 80;
+    const METADATA_SECTION_HEIGHT = 45;
+    const gridHeight = LEGEND_TOP + LEGEND_SECTION_HEIGHT + METADATA_SECTION_HEIGHT;
+
+    const range = data ? getMonthRange(data) : null;
+    const recordStart = model.meta?.coverage?.first_month || range?.first || '';
+    const dateRangeStr = range ? `${formatMonthLabel(range.first)} – ${formatMonthLabel(range.last)}` : '';
+    const aoi = model.meta?.aoi_analyzed;
+    const aoiStr = aoi
+      ? `AOI: [${aoi.min_lat.toFixed(2)}°, ${aoi.min_lon.toFixed(2)}°] to [${aoi.max_lat.toFixed(2)}°, ${aoi.max_lon.toFixed(2)}°] (${model.meta?.n_cells ?? 0} cells)`
+      : '';
 
     useImperativeHandle(ref, () => ({
       getSvgElement: () => svgRef.current,
@@ -183,24 +195,48 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                 {row.cells.map((cell, cIdx) => {
                   const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
                   const isSelected = isSelectedYear && selectedMonth === cell.month;
-                  // Months with a count but no ratio get a dark dashed cell and a short code, so they can't
-                  // be read as the white "1.0x normal" colour.
-                  const noRatio = !cell.isOutOfRange && cell.value !== null ? NO_RATIO_CODE[cell.anomalyState] : undefined;
-                  const colorInfo = cell.isOutOfRange
-                    ? { fill: '#0f172a', stroke: '#1e293b', textColor: '#64748b' }
-                    : noRatio
-                      ? { fill: '#0b1120', stroke: '#64748b', textColor: '#94a3b8' }
-                      : getAnomalyColor(cell.anomaly, cell.anomalyState);
+                  const isBeforeStart = Boolean(recordStart && cell.monthStr < recordStart);
+                  const isTrulyOutOfRange = cell.isOutOfRange && !isBeforeStart;
+                  const isUnavailable = !isTrulyOutOfRange && (cell.state === 'unavailable' || cell.value === null || isBeforeStart);
+                  const isZeroDetection = !isTrulyOutOfRange && !isUnavailable && (cell.isZero || cell.value === 0);
+                  const noRatio = !isTrulyOutOfRange && !isUnavailable && !isZeroDetection && cell.value !== null ? NO_RATIO_CODE[cell.anomalyState] : undefined;
+
+                  let cellFill = 'none';
+                  let cellStroke = 'none';
+                  let textColor = '#64748b';
+                  let strokeDasharray: string | undefined = undefined;
+
+                  if (isTrulyOutOfRange) {
+                    cellFill = 'none';
+                    cellStroke = 'none';
+                  } else if (isUnavailable) {
+                    cellFill = 'url(#ano-missing-data-hatch)';
+                    cellStroke = isSelected ? '#38bdf8' : '#555555';
+                  } else if (isZeroDetection && (cell.anomaly === null || cell.anomalyState !== 'ok')) {
+                    cellFill = '#ffffff';
+                    cellStroke = isSelected ? '#38bdf8' : '#334155';
+                    textColor = '#090d16';
+                  } else if (noRatio) {
+                    cellFill = '#0b1120';
+                    cellStroke = isSelected ? '#38bdf8' : '#64748b';
+                    textColor = '#94a3b8';
+                    strokeDasharray = isSelected ? undefined : '3 2';
+                  } else {
+                    const colorInfo = getAnomalyColor(cell.anomaly, cell.anomalyState);
+                    cellFill = colorInfo.fill;
+                    cellStroke = isSelected ? '#38bdf8' : colorInfo.stroke;
+                    textColor = colorInfo.textColor;
+                  }
 
                   return (
                     <g
                       key={cell.monthStr}
                       transform={`translate(${xPos}, 0)`}
-                      style={{ cursor: cell.isOutOfRange ? 'default' : 'pointer' }}
-                      onClick={() => !cell.isOutOfRange && onCellClick?.(cell)}
-                      onMouseEnter={(e) => !cell.isOutOfRange && onCellHover?.(cell, e)}
+                      style={{ cursor: isTrulyOutOfRange ? 'default' : 'pointer' }}
+                      onClick={() => !isTrulyOutOfRange && onCellClick?.(cell)}
+                      onMouseEnter={(e) => !isTrulyOutOfRange && onCellHover?.(cell, e)}
                       onMouseLeave={() => onCellHover?.(null)}
-                      tabIndex={cell.isOutOfRange ? -1 : 0}
+                      tabIndex={isTrulyOutOfRange ? -1 : 0}
                       role="gridcell"
                       aria-label={cell.ariaLabel}
                     >
@@ -211,34 +247,34 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                         height={CELL_HEIGHT}
                         rx="2.5"
                         ry="2.5"
-                        fill={colorInfo.fill}
-                        stroke={isSelected ? '#38bdf8' : colorInfo.stroke}
-                        strokeWidth={isSelected ? '2' : '1'}
-                        strokeDasharray={noRatio && !isSelected ? '3 2' : undefined}
+                        fill={cellFill}
+                        stroke={cellStroke}
+                        strokeWidth={isSelected ? '2' : (isTrulyOutOfRange ? '0' : '1')}
+                        strokeDasharray={strokeDasharray}
                       />
 
-                        {showSensorMarkers && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
+                      {showSensorMarkers && !isTrulyOutOfRange && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
 
-                      {cell.isProvisional && !cell.isOutOfRange && (
+                      {cell.isProvisional && !isTrulyOutOfRange && (
                         <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b">
                           <title>Provisional NRT</title>
                         </rect>
                       )}
 
                       {noRatio && (
-                        <text x={CELL_WIDTH / 2} y={CELL_HEIGHT / 2 + 3.5} textAnchor="middle" fontSize="9.5" fill={colorInfo.textColor}>
+                        <text x={CELL_WIDTH / 2} y={CELL_HEIGHT / 2 + 3.5} textAnchor="middle" fontSize="9.5" fill={textColor}>
                           {noRatio}
                         </text>
                       )}
 
-                      {!cell.isOutOfRange && !noRatio && cell.anomaly !== null && (
+                      {!isTrulyOutOfRange && !isUnavailable && !noRatio && cell.anomaly !== null && (
                         <text
                           x={CELL_WIDTH / 2}
                           y={CELL_HEIGHT / 2 + 3.5}
                           textAnchor="middle"
                           fontSize="9.5"
                           fontWeight="600"
-                          fill={colorInfo.textColor}
+                          fill={textColor}
                         >
                           {formatAnomaly(cell.anomaly)}
                         </text>
@@ -250,13 +286,83 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
             );
           })}
 
-          <g transform={`translate(${LEFT_LABEL_WIDTH}, ${gridHeight - 16})`}>
-            <text x="0" y="0" fontSize="10" fill="#64748b">
-              {model.meta?.data_kind === 'synthetic'
-                ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
-                : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
-            </text>
-          </g>
+            {/* Definitions */}
+            <defs>
+              <pattern id="ano-missing-data-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#e5e5e5" />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#555555" strokeWidth="1.2" />
+              </pattern>
+            </defs>
+
+            {/* Embedded SVG Legend (Export & Screen) */}
+            <g transform={`translate(0, ${LEGEND_TOP})`}>
+              <line
+                x1={LEFT_LABEL_WIDTH - 10}
+                y1="-8"
+                x2={LEFT_LABEL_WIDTH + 12 * (CELL_WIDTH + CELL_GAP) + 50}
+                y2="-8"
+                stroke="#1e293b"
+                strokeWidth="1"
+              />
+
+              {/* Row 1: Ramp + swatches */}
+              <g transform={`translate(${LEFT_LABEL_WIDTH}, 10)`}>
+                <text x="0" y="0" fontSize="11" fontWeight="600" fill="#f8fafc">
+                  Anomaly vs Median:
+                </text>
+
+                <text x="125" y="0" fontSize="10" fill="#38bdf8">&lt;=0.25x</text>
+                <g transform="translate(170, -9)">
+                  {ANOMALY_STOPS.map((color, idx) => (
+                    <rect key={idx} x={idx * 13} y="0" width="13" height="11" fill={color} stroke="#334155" strokeWidth="0.5" />
+                  ))}
+                </g>
+                <text x="295" y="0" fontSize="10" fill="#f97316">&gt;=4x</text>
+
+                {/* No Data Hatch Swatch */}
+                <rect x="345" y="-10" width="13" height="13" rx="2" fill="url(#ano-missing-data-hatch)" stroke="#555555" strokeWidth="1" />
+                <text x="363" y="0" fontSize="10" fill="#94a3b8">No Data</text>
+
+                {/* n/c partial */}
+                <rect x="420" y="-10" width="13" height="13" rx="2" fill="#0b1120" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+                <text x="438" y="0" fontSize="10" fill="#94a3b8">n/c (partial)</text>
+
+                {/* - no baseline */}
+                <rect x="505" y="-10" width="13" height="13" rx="2" fill="#0b1120" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="523" y="0" fontSize="10" fill="#94a3b8">– (no baseline)</text>
+
+                {/* Provisional */}
+                <rect x="595" y="-8" width="9" height="9" rx="1.5" fill="#f59e0b" />
+                <text x="609" y="0" fontSize="10" fill="#94a3b8">Provisional</text>
+              </g>
+
+              {/* Row 2: Sensor Epochs */}
+              {showSensorMarkers && (
+                <g transform={`translate(${LEFT_LABEL_WIDTH}, 34)`}>
+                  <circle cx="5" cy="-3" r="4" fill="#a855f7" />
+                  <text x="14" y="0" fontSize="10" fill="#94a3b8">Terra (Nov 2000 – Jun 2002)</text>
+
+                  <circle cx="165" cy="-3" r="4" fill="#3b82f6" />
+                  <text x="174" y="0" fontSize="10" fill="#94a3b8">Aqua (Jul 2002 – Dec 2011)</text>
+
+                  <circle cx="325" cy="-3" r="4" fill="#10b981" />
+                  <text x="334" y="0" fontSize="10" fill="#94a3b8">VIIRS (Jan 2012 – Present)</text>
+                </g>
+              )}
+
+              {/* Row 3: Metadata, Disclaimer, AOI & Date Range */}
+              <g transform={`translate(${LEFT_LABEL_WIDTH}, 62)`}>
+                <line x1="0" y1="-8" x2={12 * (CELL_WIDTH + CELL_GAP) + 50} y2="-8" stroke="#1e293b" strokeWidth="1" />
+                <text x="0" y="4" fontSize="10" fontWeight="600" fill={model.meta?.data_kind === 'synthetic' ? '#f59e0b' : '#94a3b8'}>
+                  {model.meta?.data_kind === 'synthetic'
+                    ? 'DEMONSTRATION DATA (SYNTHETIC) • NASA Space Apps Challenge 2026 • EmberTrace'
+                    : 'NASA FIRMS Harmonized Fire Record • EmberTrace'}
+                </text>
+                <text x="0" y="19" fontSize="9.5" fill="#64748b">
+                  {[dateRangeStr ? `Coverage: ${dateRangeStr}` : '', aoiStr].filter(Boolean).join('  •  ')}
+                </text>
+              </g>
+            </g>
         </svg>
         </div>
       </div>
