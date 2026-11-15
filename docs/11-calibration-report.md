@@ -123,20 +123,41 @@ Command: `python science/splice_placebo.py --run out`
 
 ---
 
-## 5. Calendar-Month Factor Experiment (Future Work / Candidate Upgrade)
+## 5. Calendar-Month Factor Upgrade (`0.3-monthly-ratio`, Now Default)
 
-Fitting one `sum(y) / sum(x)` factor per calendar month on the 70% training window only (with monsoon months **Jun–Sep** pooled into one bucket and `0 → 0` preserved):
+Fitting one `sum(y) / sum(x)` factor per calendar month (with monsoon months **Jun–Sep** pooled into one bucket and `0 → 0` preserved):
 
 | Pair | Method | Hold-out `corr` | Hold-out `MAPE` | **Median Abs % Error** | `mean(pred/actual)` |
 |---|---|---|---|---|---|
 | **Aqua → VIIRS** | Single factor (`8.005`) | `0.9566` | `27.7%` | `19.8%` | `0.939` |
-| | **Calendar-month (pooled Jun–Sep)** | **`0.9958`** | **`23.3%`** | **`8.7%`** | `1.168` |
+| | **Calendar-month (pooled Jun–Sep)** | **`0.9958`** | **`23.3%`** | **`8.7%`** | **`1.168`** |
 | **Terra → Aqua** | Single factor (`2.831`) | `0.8744` | `97.0%` | `68.0%` | `1.764` |
 | | **Calendar-month (pooled Jun–Sep)** | **`0.9726`** | **`27.6%`** | **`24.1%`** | **`1.096`** |
 
+### Key Limitations of `0.3-monthly-ratio` (For the Limitations Slide)
+1. **Slight positive bias on Aqua → VIIRS hold-out (`mean(pred/actual) = 1.17`):** While median monthly error drops from `19.8%` to `8.7%` (`r = 0.996`), the unweighted mean ratio of predicted to actual monthly totals across the 29 hold-out months is `1.168` (`+17%`), pulled up by low-count monsoon months.
+2. **Monsoon factor uncertainty (`Jun–Sep` Aqua → VIIRS factor `= 16.67`, ~17):** The pooled Jun–Sep factor for Aqua → VIIRS is `16.67` (`16.94` on the 70% train split), roughly double the non-monsoon months (`5.02–12.26`). Monsoon months have very small detection counts across India (`300–1,200` VIIRS, `25–100` Aqua), making monsoon calibration the least certain part of the curve.
+3. **`2012-01` handover shows a `+26%` 12-month rise (`×1.264`, `+0.81σ`):** Comparing the 12 months after `2012-01` (`464,257`) with the 12 months before (`367,356`) gives a `+26.4%` rise. Because year-to-year natural fire variability over India is `±26.5%` (`placebo std = 0.2649`), `+0.81σ` is well within normal year-to-year variation, but visually it is a rise across 2011→2012, not a flat line.
+4. **Splice check power & Terra → Aqua single-month error:** The deseasonalized splice check can only rule out steps larger than ~50% (`±2σ`). Terra → Aqua (`2000–2002` chained) still has a `24.1%` median (`27.6%` mean) monthly hold-out error, and the Aqua → VIIRS annual ratio drifts ~10% across `2012–2019` (`7.47` to `8.51`).
+
 ---
 
-## 6. Reproducible Commands (`CAL-7` & `CAL-8`)
+## 6. Cell Size Check (`CAL-6`: `0.25°` vs `0.50°`)
+
+Aggregating `out/normalized.csv` from `0.25°` (`4,651` active cells) to `0.50°` (`1,259` active cells) by summing normalized counts per `0.50° × 0.50°` cell:
+
+| Grid Size | Active Cells | Total Rows (`313` mos) | Pair | Global Factor | Cell-Level `pearson_r` (`n_cell_months`) | Hold-Out `corr` | Hold-Out Median Error | Hold-Out `MAPE` |
+|---|---|---|---|---|---|---|---|---|
+| **`0.25°`** | `4,651` | `1,455,763` (`2.3 MB` Parquet) | **Aqua → VIIRS** | `7.9791` | `0.8899` (`175,941`) | `0.9958` | `8.75%` | `23.29%` |
+| **`0.25°`** | `4,651` | `1,455,763` | **Terra → Aqua** | `2.7718` | `0.6577` (`73,696`) | `0.9726` | `24.10%` | `27.63%` |
+| **`0.50°`** | `1,259` | `394,067` | **Aqua → VIIRS** | `7.9791` | `0.9131` (`68,979`) | `0.9958` | `8.75%` | `23.29%` |
+| **`0.50°`** | `1,259` | `394,067` | **Terra → Aqua** | `2.7718` | `0.7300` (`37,944`) | `0.9726` | `24.10%` | `27.63%` |
+
+- **Decision:** Keep **`0.25°`** in `meta.json`. Because `monthly_ratio` sums over cells ($\sum y / \sum x$), all regional factors and hold-out errors are identical between `0.25°` and `0.50°`. Cell-level correlation at `0.25°` is already high (`0.890` Aqua→VIIRS, `0.658` Terra→Aqua), the full `0.25°` Parquet file is only `2.3 MB`, and `0.25°` provides `4×` finer spatial area snapping for user bounding boxes.
+
+---
+
+## 7. Reproducible Commands (`CAL-7` & `CAL-8`)
 
 ```bash
 python science/hero_figure.py --run out --out science/figures/hero.png

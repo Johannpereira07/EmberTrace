@@ -4,7 +4,42 @@ EmberTrace, NASA Space Apps 2026, Challenge 15 (MODIS/VIIRS hotspot harmonizatio
 Branch: `p0/planning-folder-add`. Nothing has been pushed to `main`.
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased] - 2026-11-15
+## [0.3-monthly-ratio] - 2026-11-15
+
+### Added
+- **Calendar-month ratio calibration (`method: "monthly_ratio"`, Jun–Sep pooled) as default (`aa4b2da`):**
+  - `pipeline/model/calibrate.py`: added `fit_monthly_ratio` (pooling monsoon months `6, 7, 8, 9` into one shared bucket `sum(y)/sum(x)`) and updated `apply_ratio` / `apply_log_line` to accept a `months` series/array and scale each cell-month by its calendar month's factor.
+  - `calibration.json` now includes `"method": "monthly_ratio"`, `"monthly_factors"` (`"1"`..`"12"`), and `"pooled_months": [6, 7, 8, 9]`, while retaining `"factor"`, `"ratio_y_to_x"`, and `"window"` for backward compatibility.
+  - `pipeline/tests/model/test_calibrate.py`: added `test_monthly_ratio_zero_stays_zero`, `test_monthly_ratio_picks_factor_by_calendar_month`, and `test_monthly_ratio_pooled_monsoon_shares_factor` (`63 passed` across `pipeline/tests`).
+- **Hero figure (`CAL-7`):** `science/hero_figure.py` → `science/figures/hero.png` (`1600×680 px`, comparing unnormalized MODIS/VIIRS raw counts vs harmonized VIIRS-equivalent series on shared axes).
+- **One-command real-data runbook (`CAL-8`):** `science/real_report.py` → `out/real_report/report.md`, `overlap_*.png`, and CSV tables (`holdout_*.csv`, `yearly_ratios_*.csv`, `deseasonalized_splice.csv`, `viirs_satellite_composition.csv`).
+- **Cell size check (`CAL-6`):** Verified `0.25°` (`4,651` cells, `2.3 MB` Parquet, cell-level `r = 0.890` Aqua→VIIRS, `0.658` Terra→Aqua) vs `0.50°` (`1,259` cells, cell-level `r = 0.913` / `0.730`, identical regional factors and hold-out errors). Confirmed `0.25°`.
+- **Explainer & slide copy (`CAL-10`):** `docs/explainer.md` and full calibration report `docs/11-calibration-report.md`.
+
+### Changed
+- Re-exported `data/cell_month.parquet`, `data/meta.json` (`pipeline_version: "0.3-monthly-ratio"`), and `data/calibration.json` from the full India run.
+- Hold-out comparison (`single factor` vs `monthly_ratio` with Jun–Sep pooled):
+
+  | Pair | Method | Train | Test | Hold-Out `corr` | Hold-Out `MAPE` | **Median Abs % Error** | `mean(pred/actual)` |
+  |---|---|---|---|---|---|---|---|
+  | **Aqua → VIIRS** | Single factor (`8.005`) | `2012-01..2017-07` | `2017-08..2019-12` | `0.9566` | `27.7%` | `19.8%` | `0.939` |
+  | **Aqua → VIIRS** | **Calendar-month (`monthly_ratio`)** | `2012-01..2017-07` | `2017-08..2019-12` | **`0.9958`** | **`23.3%`** | **`8.7%`** | **`1.168`** |
+  | **Terra → Aqua** | Single factor (`2.831`) | `2002-08..2009-02` | `2009-03..2011-12` | `0.8744` | `97.0%` | `68.0%` | `1.764` |
+  | **Terra → Aqua** | **Calendar-month (`monthly_ratio`)** | `2002-08..2009-02` | `2009-03..2011-12` | **`0.9726`** | **`27.6%`** | **`24.1%`** | **`1.096`** |
+
+- Updated deseasonalized splice check (`science/splice_placebo.py`, placebo `217` months: `mean = 1.0501`, `std = 0.2649`):
+  - `2002-07`: `309,138` → `310,320` (`×1.004`, **`-0.17σ`**)
+  - `2012-01`: `367,356` → `464,257` (`×1.264`, **`+0.81σ`**)
+  - `2023-03`: `478,402` → `375,117` (`×0.784`, **`-1.00σ`**)
+
+### Updated Limitations (for the Limitations slide)
+- Prediction is slightly high on average for Aqua→VIIRS (`mean(pred/actual) = 1.17`).
+- The pooled Jun–Sep factor for Aqua→VIIRS is `16.67` (~17), roughly double the other months (`5.0–12.3`); monsoon calibration is least certain because fire counts are tiny.
+- `2012-01` shows a `+26%` rise (`×1.264`, `+0.81σ`) in the 12 months after the handover; within normal year-to-year variation (`±26.5%`), but a rise rather than a flat line.
+
+---
+
+## [0.2-ratio-of-totals] - 2026-11-15
 
 ### Added
 - `science/placebo_lib.py` and `science/splice_placebo.py`: deseasonalized splice check. For each handover it computes the 12-month sum after divided by the 12-month sum before, and compares it with the same statistic at 217 non-handover (placebo) months. Results are reported as a z-score. `science/splice_check.py` is kept as is. (`8dc3dac`)
@@ -69,12 +104,12 @@ Yearly overlap ratio: Aqua→VIIRS ranges 7.47 to 8.51 (about +10% drift 2012 to
 - NOAA-21 detected about 23.5% fewer fires than S-NPP in 2023 (spin-up), which pulls the 3-satellite average down by about 2% that year.
 
 ## Open items
-- [ ] Hero figure `science/figures/hero.png` (CAL-7)
-- [ ] One-command real-data report and runbook (CAL-8)
+- [x] Hero figure `science/figures/hero.png` (CAL-7)
+- [x] One-command real-data report and runbook (`science/real_report.py`, CAL-8)
 - [ ] Rename hold-out fields in `calibration.json` to make the fraction units explicit (e.g. `..._fraction`)
-- [ ] Optional: per-calendar-month calibration factors, adopt only if hold-out median error improves clearly
-- [ ] Explainer text for Person 4 (CAL-10) and two slides for Person 5 (due Sun 14:00)
-- [ ] Re-run 12-vs-12 audit for 2018-04 and confirm one consistent number (two runs printed different values; see Notes)
+- [x] Optional: per-calendar-month calibration factors (`monthly_ratio`, Jun–Sep pooled), adopted after median error dropped `19.8% -> 8.7%` (Aqua→VIIRS) and `68.0% -> 24.1%` (Terra→Aqua)
+- [x] Explainer text for Person 4 (`docs/explainer.md`, CAL-10) and two slides for Person 5 (`docs/explainer.md` §2)
+- [x] Re-run 12-vs-12 audit for 2018-04 and confirm one consistent number (`×0.691` on `viirs_count_norm` vs `×0.683` on `snpp_norm`, confirmed in `out/real_report/viirs_satellite_composition.csv`)
 
 ## Notes for teammates
 - **Person 1 (ingest):** no change needed. `v : I audited viirs_count_norm (S-NPP + NOAA-20 + NOAA-21 divided by platform_weight) against an S-NPP-only normalized series (snpp_norm)

@@ -37,7 +37,8 @@ Every month on the 0.25° grid is expressed in **VIIRS-equivalent detections per
 ### Slide B: Limitations (Exact Wording)
 > **Calibrated on the 2012–2019 overlap (monthly-total $r = 0.996$ with seasonal factors, $0.96$ single factor). Handover steps are within natural variability, but the splice check can only detect large steps. 2000–2011 values carry higher uncertainty than 2012+.**
 
-- **Splice check power:** Natural year-to-year fire variability over India is **±26%** (`placebo std = 0.265`), so handover tests can only detect steps larger than ~50%. The primary evidence is the multi-year overlap fit.
-- **Pre-2012 uncertainty:** Even with calendar-month factors (Jun–Sep pooled) capturing diurnal overpass shifts between morning Terra and afternoon Aqua, hold-out median monthly error is **24.1% (MAPE 27.6%)** for Terra→Aqua (down from 68% median / 97% mean with a single factor) and **8.7% (MAPE 23.3%)** for Aqua→VIIRS.
-- **Overlap drift:** The Aqua→VIIRS yearly ratio drifts by **~10%** between 2012 (`7.47`) and 2019 (`8.20`).
+- **Slight positive bias on Aqua → VIIRS (`mean pred/actual = 1.17`):** While median hold-out error drops from **19.8% to 8.7%**, the prediction is slightly high on average (`1.17×`) across hold-out months due to low-count monsoon months.
+- **Monsoon factor uncertainty (`Jun–Sep` Aqua → VIIRS factor $\approx 17$):** The pooled Jun–Sep factor for Aqua→VIIRS is **16.7** (~17), roughly double the other months (`5.0–12.3`). Monsoon season is where calibration is least certain because active-fire counts are tiny across India.
+- **`2012-01` handover shows a +26% rise (`×1.264`, `+0.81σ`):** The 12 months after `2012-01` are **+26% higher** than the 12 months before (`2002-07` is `×1.004`, `−0.17σ`). That is within normal year-to-year fire variation (`±26.5%`), but it is a rise, not a flat line.
+- **Splice check power & pre-2012 uncertainty:** Natural year-to-year fire variability is **±26.5%** (`placebo std = 0.265`), so handover checks can only detect steps larger than ~50%. Terra→Aqua (`2000–2002` chained) has a **24.1% median (27.6% mean)** monthly hold-out error, and the Aqua→VIIRS annual ratio drifts **~10%** from 2012 (`7.47`) to 2019 (`8.20`).
 - **Provisional NRT months (Aug 2026+):** Static-source masking leaves ~±4% residual error; the final month is partial.
