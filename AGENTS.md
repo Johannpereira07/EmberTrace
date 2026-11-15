@@ -20,11 +20,11 @@ Harmonize MODIS and VIIRS active-fire hotspots (NASA FIRMS) into one consistent 
 Exists now:
 - `pipeline/run.py`: runs the pipeline. `pipeline/ingest/` = stages 1-4 (load, filter, grid+count, normalize; Person 1), `pipeline/model/` = stages 5-7 (calibrate, harmonize, calendar; Person 2). Split from the old single-file `harmonize.py` in ING-1 with byte-identical outputs.
 - `contracts/normalized.schema.md`: handoff H1 (stage-4 table, ingest -> model).
-- `science/splice_check.py` (`make splice-check`, CAL-5): the "no jump" check. For source handovers (2002-07, 2012-01) it compares both sources, converted, in the 12 months after (they overlap), so a step of x1 means no jump. 2023-03 gets a weaker month-to-month check. Exits 1 on FAIL. **Today: FAIL at 2002-07 (x0.38) and 2012-01 (x0.77) on the full India run**, from the zero-to-positive issue. Rule and tolerance (5%) are provisional, in config.yaml.
-- `pipeline/export.py` (`make export`): writes the app's data, `data/cell_month.parquet` + `data/meta.json` + `data/calibration.json` (handoff H2: `contracts/cell_month.schema.md`, `contracts/meta.schema.json`; CAL-4). The committed files are the full India run, labelled `pipeline_version: 0.1-calibration-pending` until the stage 5-7 fix. Regenerate with `make pipeline && make export`.
+- `science/splice_check.py` (`make splice-check`, CAL-5): the "no jump" check. For source handovers (2002-07, 2012-01) it compares both sources, converted, in the 12 months after (they overlap), so a step of x1 means no jump. 2023-03 gets a weaker month-to-month check. Exits 1 on FAIL. **Today (full India run, ratio-of-totals calibration): 2002-07 x0.95 PASS, 2012-01 x0.94 FAIL (just outside 5%), 2023-03 x1.56 FAIL (weak check)**; see Known issues. Rule and tolerance (5%) are provisional, in config.yaml.
+- `pipeline/export.py` (`make export`): writes the app's data, `data/cell_month.parquet` + `data/meta.json` + `data/calibration.json` (handoff H2: `contracts/cell_month.schema.md`, `contracts/meta.schema.json`; CAL-4). The committed files are the full India run, labelled `pipeline_version: 0.1-calibration-pending` (now ratio-of-totals calibration; label to be confirmed by Person 2). Regenerate with `make pipeline && make export`.
 - `contracts/samples/`: real-data samples for central India: H1 `normalized`, plus a **stand-in** `cell_month` + `meta.json` for the API until Person 2's H2 lands. Read its README (rules and known quirks).
 - `pipeline/config.yaml`: satellite dates and series, MODIS confidence thresholds (assumed), default cell size. Read and checked by `pipeline/ingest/satellites.py`; a bad value fails loudly (ING-2).
-- `pipeline/tests/ingest/`: pytest tests for stages 1-4.
+- `pipeline/tests/ingest/`: pytest tests for stages 1-4. `pipeline/tests/model/`: tests for stages 5-7 (Person 2).
 - `tools/synthetic/`: synthetic FIRMS files with a planted answer (ING-7). `make synthetic` generates them, runs the pipeline and checks the result against the truth (about 6 s). Output is labelled `data_kind: synthetic`; see its README.
 - `scripts/profile_raw.py`: profiles the raw FIRMS files (columns, codes, date ranges).
 - `data/raw/DL_FIRE_<product>_<id>/`: real FIRMS downloads, each with `fire_archive_*.csv`, `fire_nrt_*.csv` and `Readme.txt`. Products: `M-C61` (MODIS C6.1, Terra + Aqua), `SV-C2` (VIIRS S-NPP), `J1V-C2` (VIIRS NOAA-20), `J2V-C2` (VIIRS NOAA-21). Do not commit these or any large data. Synthetic data must be labelled as synthetic.
@@ -34,7 +34,6 @@ Exists now:
 - `web/` (Person 4 app, Person 5 charts): React + Vite + TypeScript, react-leaflet + leaflet-draw, D3 scales + SVG charts. `cd web && npm ci && npm run dev | build | test`. Chart rules: `web/src/features/charts/AGENTS.md`.
 
 Planned (docs/03 §2), not created yet:
-- Tests for `pipeline/model/` (Person 2).
 - `make web | web-live`.
 
 Deploy: one Docker container (root `Dockerfile`) on **Google Cloud Run**, `asia-south1`. API under `/api`, frontend at `/`, data baked into the image. Backup: frontend in mock mode. See `docs/06-deployment.md`.
@@ -65,7 +64,7 @@ Make targets: `make web | web-live` (planned); `make pipeline | export | splice-
 2. Filter: drop confidence `low`; for archive files keep `type == 0` (vegetation fire). NRT files have no `type`: drop NRT detections inside the static-source mask built from archive type 1/2/3 locations (docs/03, ING-11 method note).
 3. Grid 0.25°, count per cell per month. Missing (cell, month) = 0 only if a satellite was observing; NaN if not.
 4. Normalize: divide counts by the number of satellites observing that month (fractional for partial months).
-5. Conversions (log1p-log1p line + bias factor; needs >= 30 rows and >= 12 months):
+5. Conversions (ratio of totals over the overlap window, `factor = sum(new) / sum(old)`, no intercept, so 0 stays 0; replaced the log1p-log1p line in CAL-2/CAL-3, pending team sign-off; needs >= 30 rows and >= 12 months):
    - Aqua -> VIIRS, fitted 2012-01..2019-12 (before Terra/Aqua orbit drift; verify dates)
    - Terra -> Aqua, fitted 2002-08..2011-12, used only for Nov 2000 - Jun 2002
 6. Final value per cell-month: VIIRS if present, else calibrated Aqua, else Terra chained via Aqua. Keep the `source` column: `VIIRS` (2012-01+), `AQUA_calibrated` (2002-07 to 2011-12), `TERRA_chained` (2000-11 to 2002-06).
@@ -113,12 +112,11 @@ NOAA-21 2023-03-01: the archive file's first detections are on that date, matchi
 
 ## Known issues (to do)
 
-- Anomaly with a zero calendar-month median is not yet handled in code: must return `not_defined` (blank + flag), not inf/NaN.
 - `grid_counts` builds the full month × cell grid per series: memory risk on regions much larger than India (India at 0.25° peaks at 4.6 GB, docs/09).
 - No de-duplication when overlapping downloads contain the same detection.
 - No daily counts, so month-to-date comparison is not possible yet.
 - Satellite availability comes from the loaded data's first/last month (`restrict_to_loaded_data`). Correct on the full files (first detections = mission starts); on a spatial subset it starts satellites too late (the pipeline warns). Run the pipeline on the full files; for subsets pass `--outages` with the India-wide list.
-- **Conversions turn 0 detections into a positive value** (Person 2, CAL-2/CAL-3). The log1p line has a positive intercept, so `apply_log_line(0) > 0`. **Confirmed on the full India run (docs/09):** a cell with 0 detections becomes 3.22 (`AQUA_calibrated`) or 18.26 (`TERRA_chained`), a floor of ~15,000 / ~84,900 per month over 4,651 cells. The Jun to Jul 2002 change is ×0.18 (normal ×0.81 to 0.98), a large artificial step, and 46% of the pre-2012 total comes from cells with 0 detections. Fails the PRD success test. Needs a fix that keeps 0 at 0.
+- **Splice check still fails at 2012-01 (x0.94) and 2023-03 (x1.56, weak check)** on the full India run with the ratio-of-totals calibration (Person 2). 2012-01 is a ~6% step, just outside the provisional 5% tolerance; Person 2 reports it is within placebo noise (about 20% of random dates show a similar step), not yet independently checked. Tolerance stays at 5% until the team agrees otherwise. The old zero-to-positive issue (log1p intercept) is fixed: 0 detections stay 0 for every source.
 
 ## Git conventions
 
