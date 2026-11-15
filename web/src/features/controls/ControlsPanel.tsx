@@ -11,6 +11,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppState, AoiBbox } from '../../app/store';
 import { useCalendarQuery } from '../../app/useCalendarQuery';
+import { Explain } from '../guide/Explain';
 
 export const PRESETS: Array<{ name: string; icon: string; aoi: AoiBbox }> = [
   {
@@ -109,13 +110,14 @@ export function ControlsPanel() {
   return (
     <div className="flex flex-col gap-5">
       {/* Quick AOI Presets */}
-      <section>
+      <section data-tour="regions">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Quick Regions
           </span>
           <span className="text-[10px] text-slate-500 font-medium">One click to load</span>
         </div>
+        <Explain topic="regions" className="mb-2" />
         <div className="grid grid-cols-1 gap-1.5">
           {PRESETS.map((p) => {
             const isSelected =
@@ -152,6 +154,7 @@ export function ControlsPanel() {
           </span>
           <span className="text-[10px] text-cyan-400 font-mono">WGS-84</span>
         </div>
+        <Explain topic="bbox" className="mb-2" />
         <div className="grid grid-cols-2 gap-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 shadow-inner">
           <CoordInput label="Min Lat" value={form.min_lat} min={-90} max={form.max_lat} step={0.01} unit="°N" onChange={(v) => updateForm('min_lat', v)} />
           <CoordInput label="Max Lat" value={form.max_lat} min={form.min_lat} max={90} step={0.01} unit="°N" onChange={(v) => updateForm('max_lat', v)} />
@@ -161,7 +164,7 @@ export function ControlsPanel() {
       </section>
 
       {/* Timeline Date Range (Full Width, Zero Truncation) */}
-      <section aria-label="Date range">
+      <section aria-label="Date range" data-tour="timeline">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Analysis Timeline
@@ -174,6 +177,7 @@ export function ControlsPanel() {
             Full Record (26y)
           </button>
         </div>
+        <Explain topic="timeline" className="mb-2" />
         <div className="flex flex-col gap-2.5 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 shadow-inner">
           <div className="flex items-center justify-between gap-3">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 w-14">
