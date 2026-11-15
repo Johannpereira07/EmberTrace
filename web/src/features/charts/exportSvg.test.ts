@@ -81,8 +81,8 @@ describe('Exported SVG Legend & Metadata Content', () => {
     
     // Legend content inside SVG
     expect(html).toContain('Anomaly vs Median:');
-    expect(html).toContain('&lt;= 0.25x');
-    expect(html).toContain('&gt;= 4.0x');
+    expect(html).toContain('&lt;=0.25x');
+    expect(html).toContain('&gt;=4x');
     expect(html).toContain('n/c (partial)');
     expect(html).toContain('– (no baseline)');
 
