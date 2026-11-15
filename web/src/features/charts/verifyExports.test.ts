@@ -40,7 +40,10 @@ describe('Export Verification for Normal & Sparse Fixtures', () => {
     // 4. No var(--...) used for styling
     expect(svg).not.toMatch(/var\(--/);
 
-    // 5. Background is dark #090d16
+    // 5. No rect has black fill (#000, #000000, black, #0b1120)
+    expect(svg).not.toMatch(/<rect[^>]+fill=["'](?:black|#000|#000000|#0b1120)["']/i);
+
+    // 6. Background is dark #090d16
     expect(svg).toContain('fill="#090d16"');
   });
 
@@ -68,6 +71,13 @@ describe('Export Verification for Normal & Sparse Fixtures', () => {
 
     // 4. No var(--...)
     expect(svg).not.toMatch(/var\(--/);
+
+    // 5. No rect has black fill (#000, #000000, black, #0b1120)
+    expect(svg).not.toMatch(/<rect[^>]+fill=["'](?:black|#000|#000000|#0b1120)["']/i);
+
+    // 6. Contains light grey (#e5e5e5) with dark outline (#555555) for no-ratio swatches/cells
+    expect(svg).toContain('fill="#e5e5e5"');
+    expect(svg).toContain('stroke="#555555"');
   });
 
   it('verifies Sparse Calendar Heatmap export', () => {
@@ -88,5 +98,18 @@ describe('Export Verification for Normal & Sparse Fixtures', () => {
     expect(svg).toContain('ano-missing-data-hatch');
     expect(svg).not.toContain('#d6604d');
     expect(svg).not.toContain('#67001f');
+
+    // No rect has black fill (#000, #000000, black, #0b1120)
+    expect(svg).not.toMatch(/<rect[^>]+fill=["'](?:black|#000|#000000|#0b1120)["']/i);
+
+    // No grid cell rect has white fill in the anomaly heatmap (0 detections gets ramp color or #e5e5e5)
+    const gridCellRects = svg.match(/role="gridcell"[\s\S]*?<rect[^>]+>/g) || [];
+    for (const cellRect of gridCellRects) {
+      expect(cellRect).not.toContain('fill="#ffffff"');
+    }
+
+    // Contains light grey (#e5e5e5) with dark text (#333333) for not_defined cells
+    expect(svg).toContain('fill="#e5e5e5"');
+    expect(svg).toContain('fill="#333333"');
   });
 });

@@ -58,7 +58,9 @@ export const SPECIAL_CELL_COLORS = {
   unavailableStroke: '#555555',
   outOfRangeFill: 'none',
   outOfRangeStroke: 'none',
-  notEnoughHistoryFill: '#f1f5f9',
+  notEnoughHistoryFill: '#e5e5e5',
+  notEnoughHistoryStroke: '#555555',
+  notEnoughHistoryText: '#333333',
 };
 
 function interpolateHex(color1: string, color2: string, factor: number): string {
@@ -151,8 +153,8 @@ export function getAnomalyColor(
   if (status === 'not_enough_history' || status === 'not_defined' || status === 'non_comparable_partial') {
     return {
       fill: SPECIAL_CELL_COLORS.notEnoughHistoryFill,
-      stroke: '#cbd5e1',
-      textColor: '#64748b',
+      stroke: SPECIAL_CELL_COLORS.notEnoughHistoryStroke,
+      textColor: SPECIAL_CELL_COLORS.notEnoughHistoryText,
     };
   }
 

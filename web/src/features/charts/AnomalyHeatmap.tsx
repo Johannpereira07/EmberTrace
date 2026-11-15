@@ -198,13 +198,15 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                   const isBeforeStart = Boolean(recordStart && cell.monthStr < recordStart);
                   const isTrulyOutOfRange = cell.isOutOfRange && !isBeforeStart;
                   const isUnavailable = !isTrulyOutOfRange && (cell.state === 'unavailable' || cell.value === null || isBeforeStart);
-                  const isZeroDetection = !isTrulyOutOfRange && !isUnavailable && (cell.isZero || cell.value === 0);
-                  const noRatio = !isTrulyOutOfRange && !isUnavailable && !isZeroDetection && cell.value !== null ? NO_RATIO_CODE[cell.anomalyState] : undefined;
+                  const isNoRatio = !isTrulyOutOfRange && !isUnavailable && (cell.anomaly === null || cell.anomalyState !== 'ok');
+                  const isPartial = cell.isPartial;
 
                   let cellFill = 'none';
                   let cellStroke = 'none';
-                  let textColor = '#64748b';
+                  let textColor = '#333333';
                   let strokeDasharray: string | undefined = undefined;
+                  let fillOpacity: number | undefined = undefined;
+                  let cellText: string | null = null;
 
                   if (isTrulyOutOfRange) {
                     cellFill = 'none';
@@ -212,20 +214,27 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                   } else if (isUnavailable) {
                     cellFill = 'url(#ano-missing-data-hatch)';
                     cellStroke = isSelected ? '#38bdf8' : '#555555';
-                  } else if (isZeroDetection && (cell.anomaly === null || cell.anomalyState !== 'ok')) {
-                    cellFill = '#ffffff';
-                    cellStroke = isSelected ? '#38bdf8' : '#334155';
-                    textColor = '#090d16';
-                  } else if (noRatio) {
-                    cellFill = '#0b1120';
-                    cellStroke = isSelected ? '#38bdf8' : '#64748b';
-                    textColor = '#94a3b8';
-                    strokeDasharray = isSelected ? undefined : '3 2';
+                  } else if (isNoRatio) {
+                    cellFill = '#e5e5e5';
+                    cellStroke = isSelected ? '#38bdf8' : '#555555';
+                    textColor = '#333333';
+                    if (cell.anomalyState === 'non_comparable_partial') {
+                      cellText = 'n/c';
+                      strokeDasharray = isSelected ? undefined : '3 2';
+                    } else {
+                      cellText = '–';
+                    }
                   } else {
                     const colorInfo = getAnomalyColor(cell.anomaly, cell.anomalyState);
                     cellFill = colorInfo.fill;
                     cellStroke = isSelected ? '#38bdf8' : colorInfo.stroke;
                     textColor = colorInfo.textColor;
+                    cellText = formatAnomaly(cell.anomaly);
+
+                    if (isPartial) {
+                      fillOpacity = 0.65;
+                      strokeDasharray = isSelected ? undefined : '3 2';
+                    }
                   }
 
                   return (
@@ -248,6 +257,7 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                         rx="2.5"
                         ry="2.5"
                         fill={cellFill}
+                        fillOpacity={fillOpacity}
                         stroke={cellStroke}
                         strokeWidth={isSelected ? '2' : (isTrulyOutOfRange ? '0' : '1')}
                         strokeDasharray={strokeDasharray}
@@ -261,22 +271,16 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                         </rect>
                       )}
 
-                      {noRatio && (
-                        <text x={CELL_WIDTH / 2} y={CELL_HEIGHT / 2 + 3.5} textAnchor="middle" fontSize="9.5" fill={textColor}>
-                          {noRatio}
-                        </text>
-                      )}
-
-                      {!isTrulyOutOfRange && !isUnavailable && !noRatio && cell.anomaly !== null && (
+                      {cellText && !isTrulyOutOfRange && !isUnavailable && (
                         <text
                           x={CELL_WIDTH / 2}
                           y={CELL_HEIGHT / 2 + 3.5}
                           textAnchor="middle"
                           fontSize="9.5"
-                          fontWeight="600"
+                          fontWeight={isNoRatio ? '400' : '600'}
                           fill={textColor}
                         >
-                          {formatAnomaly(cell.anomaly)}
+                          {cellText}
                         </text>
                       )}
                     </g>
@@ -324,11 +328,11 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                 <text x="363" y="0" fontSize="10" fill="#94a3b8">No Data</text>
 
                 {/* n/c partial */}
-                <rect x="420" y="-10" width="13" height="13" rx="2" fill="#0b1120" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+                <rect x="420" y="-10" width="13" height="13" rx="2" fill="#e5e5e5" stroke="#555555" strokeWidth="1" strokeDasharray="2 2" />
                 <text x="438" y="0" fontSize="10" fill="#94a3b8">n/c (partial)</text>
 
                 {/* - no baseline */}
-                <rect x="505" y="-10" width="13" height="13" rx="2" fill="#0b1120" stroke="#cbd5e1" strokeWidth="1" />
+                <rect x="505" y="-10" width="13" height="13" rx="2" fill="#e5e5e5" stroke="#555555" strokeWidth="1" />
                 <text x="523" y="0" fontSize="10" fill="#94a3b8">– (no baseline)</text>
 
                 {/* Provisional */}
