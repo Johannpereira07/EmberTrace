@@ -18,7 +18,7 @@ EmberTrace turns NASA FIRMS hotspots into **one consistent, VIIRS-equivalent mon
 | Part | Status |
 |---|---|
 | Data pipeline, stages 1–4 (load, filter, grid, normalize) | ✅ Done and validated on the real FIRMS archive for India: 18.0M detections, 2000-11-01 to 2026-11-13 (`docs/09`) |
-| Stages 5–7 (calibrate, harmonize, calendar) | ⚠️ In progress. Known issue: zero detections convert to a positive value, which creates a jump at 2002-07 (`docs/09` §4). **Calendar numbers are not final results yet** |
+| Stages 5–7 (calibrate, harmonize, calendar) | ✅ Done (`0.2-ratio-of-totals`, `docs/11-calibration-report.md`): Option C ratio-of-totals calibration keeps 0 at 0; Aqua→VIIRS hold-out $r = 0.96$ (median error 19.8%); handover steps within natural variability (−0.60σ at 2002-07, +0.64σ at 2012-01) |
 | Backend API, frontend | In progress (`api/`, `web/`) |
 
 ## How to run
@@ -38,6 +38,10 @@ Without `make`:
 ```bash
 python pipeline/run.py --modis "data/raw/DL_FIRE_M-C61_*/fire_*.csv" \
                        --viirs "data/raw/DL_FIRE_*V-C2_*/fire_*.csv" --out out/
+python pipeline/export.py --run out --out data --pipeline-version 0.2-ratio-of-totals
+python science/hero_figure.py --run out --out science/figures/hero.png
+python science/real_report.py --run out --out out/real_report
+python science/splice_placebo.py --run out
 ```
 
 Outputs in `out/`: `normalized.csv` (per cell and month, per satellite series), `normalized.meta.json` (data-through date, first provisional month, outage days, filter counts), `cell_month.csv` (harmonized value and source), `calibration.json`, `calendar.csv`, `calendar_anomaly.csv`, `outages.csv`.
@@ -70,12 +74,13 @@ Start at [`docs/README.md`](docs/README.md): problem statement, PRD, implementat
 We count satellite **detections**, not ground-truth fires. In particular:
 
 - **The 2000–2002 segment is the least certain.** Terra's morning pass has no VIIRS counterpart, so it's converted in two steps (Terra → Aqua → VIIRS-equivalent).
+- **2000–2011 values are reliable for yearly and seasonal patterns, not individual months.** Calibrated on the 2012–2019 overlap (monthly-total $r = 0.96$, median hold-out error 19.8%, ~10% ratio drift across 2012–2019). For Terra → Aqua, monthly-total $r = 0.87$ but single-month median error is 68% (mean 97%), with seasonal bias (too high in May–Sep, too low in Oct–Nov).
+- **The splice check can only detect large steps.** Year-to-year fire variability over India is about ±27% (placebo std 0.27), so passing the handover check (−0.60σ at 2002-07, +0.64σ at 2012-01) only rules out steps larger than ~50%. The main evidence for calibration is the overlap fit (`docs/11-calibration-report.md`).
 - **One conversion per satellite pair for the whole region.** The real relationship probably differs between forest fires and crop burning.
 - **Satellite normalization assumes each satellite sees about the same fire activity.** That's approximate, because they pass at different times of day. Pixel size and scan angle are not corrected.
 - **Recent months (from Aug 2026) are provisional** near-real-time data and may change. The static-source mask leaves about ±4% error in them (`docs/10`). The current month is partial.
 - **Sparse areas give noisy calendars and unstable anomalies.**
 - **Assumed or provisional values:** the MODIS confidence cut-offs (30 / 80) are assumed, not verified. The outage-day cut-off and the mask settings are provisional. Terra and Aqua orbit drift after 2021–2022 is not modelled.
-- **Calendar values depend on stages 5–7, which have a known open issue** (`docs/09` §4).
 
 ## Future work
 
