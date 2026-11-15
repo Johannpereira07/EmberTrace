@@ -25,26 +25,39 @@ export const VIRIDIS_STOPS: string[] = [
   '#fde725', // 1.00
 ];
 
-// ColorBrewer-derived Diverging Blue-Orange stops centered at 1.0
+// 9-stop diverging Blue-Orange palette centered on 1.0 (log2 domain [-2, 0, 2], so 0.25x to 4x)
+export const ANOMALY_STOPS: string[] = [
+  '#2166ac', // 0: <= 0.25x (-2 log2)
+  '#4393c3', // 1: ~0.35x (-1.5 log2)
+  '#92c5de', // 2: 0.5x (-1.0 log2)
+  '#d1e5f0', // 3: ~0.71x (-0.5 log2)
+  '#f7f7f7', // 4: exactly 1.0x (0 log2)
+  '#fee0b6', // 5: ~1.41x (+0.5 log2)
+  '#fdb863', // 6: 2.0x (+1.0 log2)
+  '#e08214', // 7: ~2.83x (+1.5 log2)
+  '#b35806', // 8: >= 4.0x (+2 log2)
+];
+
 export const ANOMALY_PALETTE = {
-  extremeLow: '#053061',     // < 0.2x normal (-2.32 log2)
-  low: '#2166ac',            // 0.2x - 0.5x (-1 to -2.32 log2)
-  moderateLow: '#67a9cf',    // 0.5x - 0.8x (-0.32 to -1 log2)
-  nearNormalLow: '#d1e5f0',  // 0.8x - 1.0x (0 to -0.32 log2)
-  normal: '#f7f7f7',         // exactly 1.0x normal
-  nearNormalHigh: '#fddbc7', // 1.0x - 1.25x (0 to +0.32 log2)
-  moderateHigh: '#f4a582',   // 1.25x - 2.0x (+0.32 to +1 log2)
-  high: '#d6604d',           // 2.0x - 4.0x (+1 to +2 log2)
-  extremeHigh: '#67001f',    // > 4.0x (> +2 log2)
+  stop0: '#2166ac',
+  stop1: '#4393c3',
+  stop2: '#92c5de',
+  stop3: '#d1e5f0',
+  stop4: '#f7f7f7',
+  stop5: '#fee0b6',
+  stop6: '#fdb863',
+  stop7: '#e08214',
+  stop8: '#b35806',
 };
 
 export const SPECIAL_CELL_COLORS = {
   zeroHollowFill: '#ffffff',
-  zeroOutlineStroke: '#94a3b8',
-  unavailableFill: '#e2e8f0',
-  unavailableStroke: '#cbd5e1',
-  outOfRangeFill: '#f8fafc',
-  outOfRangeStroke: '#e2e8f0',
+  zeroOutlineStroke: '#334155',
+  unavailableFill: '#e5e5e5',
+  unavailableHatchStroke: '#555555',
+  unavailableStroke: '#555555',
+  outOfRangeFill: 'none',
+  outOfRangeStroke: 'none',
   notEnoughHistoryFill: '#f1f5f9',
 };
 
@@ -114,7 +127,8 @@ export function getActivityColor(count: number | null | undefined, maxCount: num
 }
 
 export function safeLog2Anomaly(ratio: number): number {
-  const clamped = Math.max(0.05, ratio);
+  if (ratio === 0) return -2;
+  const clamped = Math.min(4, Math.max(0.25, ratio));
   return Math.log2(clamped);
 }
 
@@ -150,35 +164,27 @@ export function getAnomalyColor(
     };
   }
 
-  if (Math.abs(anomaly - 1.0) < 0.02) {
-    return {
-      fill: ANOMALY_PALETTE.normal,
-      stroke: '#e2e8f0',
-      textColor: '#1e293b',
-    };
+  // An anomaly of exactly 0 is valid and gets the bluest color (#2166ac)
+  if (anomaly === 0) {
+    return { fill: ANOMALY_STOPS[0], stroke: ANOMALY_STOPS[0], textColor: '#ffffff' };
   }
 
-  if (anomaly < 1.0) {
-    if (anomaly <= 0.2) {
-      return { fill: ANOMALY_PALETTE.extremeLow, stroke: ANOMALY_PALETTE.extremeLow, textColor: '#ffffff' };
-    } else if (anomaly <= 0.5) {
-      return { fill: ANOMALY_PALETTE.low, stroke: ANOMALY_PALETTE.low, textColor: '#ffffff' };
-    } else if (anomaly <= 0.8) {
-      return { fill: ANOMALY_PALETTE.moderateLow, stroke: ANOMALY_PALETTE.moderateLow, textColor: '#0f172a' };
-    } else {
-      return { fill: ANOMALY_PALETTE.nearNormalLow, stroke: ANOMALY_PALETTE.nearNormalLow, textColor: '#0f172a' };
-    }
-  } else {
-    if (anomaly <= 1.25) {
-      return { fill: ANOMALY_PALETTE.nearNormalHigh, stroke: ANOMALY_PALETTE.nearNormalHigh, textColor: '#0f172a' };
-    } else if (anomaly <= 2.0) {
-      return { fill: ANOMALY_PALETTE.moderateHigh, stroke: ANOMALY_PALETTE.moderateHigh, textColor: '#0f172a' };
-    } else if (anomaly <= 4.0) {
-      return { fill: ANOMALY_PALETTE.high, stroke: ANOMALY_PALETTE.high, textColor: '#ffffff' };
-    } else {
-      return { fill: ANOMALY_PALETTE.extremeHigh, stroke: ANOMALY_PALETTE.extremeHigh, textColor: '#ffffff' };
-    }
-  }
+  // Clamp BEFORE the log: Math.max(ratio, 0.25) and Math.min(ratio, 4)
+  const clamped = Math.min(4, Math.max(0.25, anomaly));
+  const log2Val = Math.log2(clamped); // in [-2, 2]
+  const t = (log2Val + 2) / 4; // in [0, 1]
+  const index = Math.max(0, Math.min(8, Math.round(t * 8)));
+  const fill = ANOMALY_STOPS[index];
+
+  // Contrast text: indices 2 to 6 are light, others are dark
+  const darkText = index >= 2 && index <= 6;
+  const textColor = darkText ? (index === 4 ? '#1e293b' : '#0f172a') : '#ffffff';
+
+  return {
+    fill,
+    stroke: index === 4 ? '#cbd5e1' : fill,
+    textColor,
+  };
 }
 
 export function formatCount(count: number | null | undefined): string {

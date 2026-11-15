@@ -118,13 +118,15 @@ export async function exportChart(
     img.onload = () => {
       const scale = 2;
       const canvas = document.createElement('canvas');
-      canvas.width = element.clientWidth * scale;
-      canvas.height = element.clientHeight * scale;
+      const width = element.viewBox?.baseVal?.width || element.clientWidth || 760;
+      const height = element.viewBox?.baseVal?.height || element.clientHeight || 850;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.scale(scale, scale);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, element.clientWidth, element.clientHeight);
+        ctx.fillStyle = '#090d16';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0);
         canvas.toBlob((blob) => {
           if (blob) {

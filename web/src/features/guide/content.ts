@@ -77,15 +77,18 @@ export const GUIDE: Record<GuideTopic, GuideEntry> = {
     tour: 'One row per year, one column per month. Color shows how much fire was detected.',
     detail: [
       'Read across a row to see a year\'s fire season, down a column to compare the same month across years.',
-      'Activity view: dark purple is few fires, yellow is many. A hollow square means satellites were watching and saw no fires. A gray square means no satellite was observing: no data, not zero.',
-      'Anomaly view: blue is fewer fires than usual for that month, orange more. A square marked "–" has no ratio (the usual value is zero, or there are too few years to know); "n/c" is the unfinished current month.',
+      'Activity view: dark purple is few fires, yellow is many. A hollow white square means satellites were watching and saw no fires. A hatched square means no satellite was observing: no data, not zero.',
+      'Anomaly view: blue is fewer fires than usual for that month, orange more. Hollow white and hatched squares mean the same as above. A square marked "–" has no ratio (the usual value is zero, or there are too few years to know); "n/c" is the unfinished current month.',
       'The colored marks show which satellite each month comes from (Terra, Aqua or VIIRS).',
     ],
   },
   top: {
-    title: 'Most unusual months',
-    tour: 'The months with the most fire compared with their usual level. A quick way to find standout seasons.',
-    detail: ['Ranked by the anomaly ratio: the month\'s value divided by the median of the same calendar month.'],
+    title: 'Most active months',
+    tour: 'The months with the most fire detections in this area. A quick way to find standout seasons.',
+    detail: [
+      'Ranked by the month\'s fire detections (VIIRS-equivalent), highest first.',
+      'The Anomaly column shows how that month compares with the median of the same calendar month: 2× is twice the usual.',
+    ],
   },
   download: {
     title: 'Download',
