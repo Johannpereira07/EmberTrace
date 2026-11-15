@@ -194,24 +194,48 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                 {row.cells.map((cell, cIdx) => {
                   const xPos = LEFT_LABEL_WIDTH + cIdx * (CELL_WIDTH + CELL_GAP);
                   const isSelected = isSelectedYear && selectedMonth === cell.month;
-                  // Months with a count but no ratio get a dark dashed cell and a short code, so they can't
-                  // be read as the white "1.0x normal" colour.
-                  const noRatio = !cell.isOutOfRange && cell.value !== null ? NO_RATIO_CODE[cell.anomalyState] : undefined;
-                  const colorInfo = cell.isOutOfRange
-                    ? { fill: '#0f172a', stroke: '#1e293b', textColor: '#64748b' }
-                    : noRatio
-                      ? { fill: '#0b1120', stroke: '#64748b', textColor: '#94a3b8' }
-                      : getAnomalyColor(cell.anomaly, cell.anomalyState);
+                  const isBeforeStart = cell.monthStr < '2000-11';
+                  const isTrulyOutOfRange = cell.isOutOfRange && !isBeforeStart;
+                  const isUnavailable = !isTrulyOutOfRange && (cell.state === 'unavailable' || cell.value === null || isBeforeStart);
+                  const isZeroDetection = !isTrulyOutOfRange && !isUnavailable && (cell.isZero || cell.value === 0);
+                  const noRatio = !isTrulyOutOfRange && !isUnavailable && !isZeroDetection && cell.value !== null ? NO_RATIO_CODE[cell.anomalyState] : undefined;
+
+                  let cellFill = 'none';
+                  let cellStroke = 'none';
+                  let textColor = '#64748b';
+                  let strokeDasharray: string | undefined = undefined;
+
+                  if (isTrulyOutOfRange) {
+                    cellFill = 'none';
+                    cellStroke = 'none';
+                  } else if (isUnavailable) {
+                    cellFill = 'url(#ano-missing-data-hatch)';
+                    cellStroke = isSelected ? '#38bdf8' : '#555555';
+                  } else if (isZeroDetection && (cell.anomaly === null || cell.anomalyState !== 'ok')) {
+                    cellFill = '#ffffff';
+                    cellStroke = isSelected ? '#38bdf8' : '#334155';
+                    textColor = '#090d16';
+                  } else if (noRatio) {
+                    cellFill = '#0b1120';
+                    cellStroke = isSelected ? '#38bdf8' : '#64748b';
+                    textColor = '#94a3b8';
+                    strokeDasharray = isSelected ? undefined : '3 2';
+                  } else {
+                    const colorInfo = getAnomalyColor(cell.anomaly, cell.anomalyState);
+                    cellFill = colorInfo.fill;
+                    cellStroke = isSelected ? '#38bdf8' : colorInfo.stroke;
+                    textColor = colorInfo.textColor;
+                  }
 
                   return (
                     <g
                       key={cell.monthStr}
                       transform={`translate(${xPos}, 0)`}
-                      style={{ cursor: cell.isOutOfRange ? 'default' : 'pointer' }}
-                      onClick={() => !cell.isOutOfRange && onCellClick?.(cell)}
-                      onMouseEnter={(e) => !cell.isOutOfRange && onCellHover?.(cell, e)}
+                      style={{ cursor: isTrulyOutOfRange ? 'default' : 'pointer' }}
+                      onClick={() => !isTrulyOutOfRange && onCellClick?.(cell)}
+                      onMouseEnter={(e) => !isTrulyOutOfRange && onCellHover?.(cell, e)}
                       onMouseLeave={() => onCellHover?.(null)}
-                      tabIndex={cell.isOutOfRange ? -1 : 0}
+                      tabIndex={isTrulyOutOfRange ? -1 : 0}
                       role="gridcell"
                       aria-label={cell.ariaLabel}
                     >
@@ -222,34 +246,34 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                         height={CELL_HEIGHT}
                         rx="2.5"
                         ry="2.5"
-                        fill={colorInfo.fill}
-                        stroke={isSelected ? '#38bdf8' : colorInfo.stroke}
-                        strokeWidth={isSelected ? '2' : '1'}
-                        strokeDasharray={noRatio && !isSelected ? '3 2' : undefined}
+                        fill={cellFill}
+                        stroke={cellStroke}
+                        strokeWidth={isSelected ? '2' : (isTrulyOutOfRange ? '0' : '1')}
+                        strokeDasharray={strokeDasharray}
                       />
 
-                        {showSensorMarkers && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
+                      {showSensorMarkers && !isTrulyOutOfRange && <HandoverEdge cell={cell} cellHeight={CELL_HEIGHT} />}
 
-                      {cell.isProvisional && !cell.isOutOfRange && (
+                      {cell.isProvisional && !isTrulyOutOfRange && (
                         <rect x="2" y="2" width="4" height="4" rx="1" fill="#f59e0b">
                           <title>Provisional NRT</title>
                         </rect>
                       )}
 
                       {noRatio && (
-                        <text x={CELL_WIDTH / 2} y={CELL_HEIGHT / 2 + 3.5} textAnchor="middle" fontSize="9.5" fill={colorInfo.textColor}>
+                        <text x={CELL_WIDTH / 2} y={CELL_HEIGHT / 2 + 3.5} textAnchor="middle" fontSize="9.5" fill={textColor}>
                           {noRatio}
                         </text>
                       )}
 
-                      {!cell.isOutOfRange && !noRatio && cell.anomaly !== null && (
+                      {!isTrulyOutOfRange && !isUnavailable && !noRatio && cell.anomaly !== null && (
                         <text
                           x={CELL_WIDTH / 2}
                           y={CELL_HEIGHT / 2 + 3.5}
                           textAnchor="middle"
                           fontSize="9.5"
                           fontWeight="600"
-                          fill={colorInfo.textColor}
+                          fill={textColor}
                         >
                           {formatAnomaly(cell.anomaly)}
                         </text>
@@ -260,6 +284,14 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
               </g>
             );
           })}
+
+            {/* Definitions */}
+            <defs>
+              <pattern id="ano-missing-data-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#e5e5e5" />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#555555" strokeWidth="1.2" />
+              </pattern>
+            </defs>
 
             {/* Embedded SVG Legend (Export & Screen) */}
             <g transform={`translate(0, ${LEGEND_TOP})`}>
@@ -286,17 +318,21 @@ export const AnomalyHeatmap = forwardRef<ChartExportRef, AnomalyHeatmapProps>(
                 </g>
                 <text x="295" y="0" fontSize="10" fill="#f97316">&gt;=4x</text>
 
+                {/* No Data Hatch Swatch */}
+                <rect x="345" y="-10" width="13" height="13" rx="2" fill="url(#ano-missing-data-hatch)" stroke="#555555" strokeWidth="1" />
+                <text x="363" y="0" fontSize="10" fill="#94a3b8">No Data</text>
+
                 {/* n/c partial */}
-                <rect x="350" y="-10" width="13" height="13" rx="2" fill="#0f172a" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
-                <text x="368" y="0" fontSize="10" fill="#94a3b8">n/c (partial)</text>
+                <rect x="420" y="-10" width="13" height="13" rx="2" fill="#0b1120" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+                <text x="438" y="0" fontSize="10" fill="#94a3b8">n/c (partial)</text>
 
                 {/* - no baseline */}
-                <rect x="432" y="-10" width="13" height="13" rx="2" fill="#0f172a" stroke="#cbd5e1" strokeWidth="1" />
-                <text x="450" y="0" fontSize="10" fill="#94a3b8">– (no baseline)</text>
+                <rect x="505" y="-10" width="13" height="13" rx="2" fill="#0b1120" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="523" y="0" fontSize="10" fill="#94a3b8">– (no baseline)</text>
 
                 {/* Provisional */}
-                <rect x="525" y="-8" width="9" height="9" rx="1.5" fill="#f59e0b" />
-                <text x="539" y="0" fontSize="10" fill="#94a3b8">Provisional</text>
+                <rect x="595" y="-8" width="9" height="9" rx="1.5" fill="#f59e0b" />
+                <text x="609" y="0" fontSize="10" fill="#94a3b8">Provisional</text>
               </g>
 
               {/* Row 2: Sensor Epochs */}
