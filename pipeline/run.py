@@ -42,7 +42,7 @@ from pipeline.ingest import (aggregate, build_static_mask, coverage_info, daily_
                              in_static_mask, load_many, mask_summary, outage_days_by_month,
                              read_firms_table, restrict_to_loaded_data)
 from pipeline.ingest.satellites import (CELL_SIZE_DEG, NRT_MASK, OUTAGE_MIN_NEIGHBOUR_MEDIAN, OUTAGE_TABLE,
-                                        OUTAGE_WINDOW_DAYS)
+                                        OUTAGE_WINDOW_DAYS, POOLED_MONTHS)
 from pipeline.model import calendar, fit_log_line, harmonize, holdout_check
 
 
@@ -103,11 +103,12 @@ def main():
     json.dump(info, open(f"{a.out}/normalized.meta.json", "w"), indent=2)
 
     # ---- model: stages 5-7 (Person 2)
-    a2v = fit_log_line(cm, "aqua_count_norm", "viirs_count_norm", a.a2v_window)
-    t2a = fit_log_line(cm, "terra_count_norm", "aqua_count_norm", a.t2a_window)
+    pool = {"pooled_months": POOLED_MONTHS}   # config.yaml calibration.pooled_months
+    a2v = fit_log_line(cm, "aqua_count_norm", "viirs_count_norm", a.a2v_window, **pool)
+    t2a = fit_log_line(cm, "terra_count_norm", "aqua_count_norm", a.t2a_window, **pool)
     report = {"aqua_to_viirs": a2v, "terra_to_aqua": t2a,
-              "holdout_aqua_to_viirs": holdout_check(cm, "aqua_count_norm", "viirs_count_norm", a.a2v_window),
-              "holdout_terra_to_aqua": holdout_check(cm, "terra_count_norm", "aqua_count_norm", a.t2a_window)}
+              "holdout_aqua_to_viirs": holdout_check(cm, "aqua_count_norm", "viirs_count_norm", a.a2v_window, **pool),
+              "holdout_terra_to_aqua": holdout_check(cm, "terra_count_norm", "aqua_count_norm", a.t2a_window, **pool)}
     print(json.dumps(report, indent=2) if (a2v or t2a) else
           "calibration skipped (not enough overlap in this data)")
     cm = harmonize(cm, a2v, t2a)

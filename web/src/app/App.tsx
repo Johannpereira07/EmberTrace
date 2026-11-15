@@ -21,6 +21,8 @@ import { ExplainerPanel } from '../features/explainer/ExplainerPanel';
 import { FireCalendar } from '../features/charts/FireCalendar';
 import { TopAnomalies } from '../features/insights/TopAnomalies';
 import { fetchMeta } from '../api/client';
+import { Explain, ExplainAllSwitch, ExplainProvider } from '../features/guide/Explain';
+import { TourButton, TourProvider } from '../features/guide/Tour';
 import type { ChartExportRef } from '../features/charts/types';
 import type { CalendarResponse } from '../../../contracts/api/types';
 
@@ -73,8 +75,11 @@ function MainContent() {
         <div className="xl:col-span-3 flex">
           <HeroStrip />
         </div>
-        <div className="xl:col-span-2 h-80 xl:h-auto min-h-[300px] rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950 relative">
-          <EmberMap />
+        <div className="xl:col-span-2 flex flex-col gap-2">
+          <div data-tour="map" className="h-80 xl:h-auto xl:flex-1 min-h-[300px] rounded-2xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950 relative">
+            <EmberMap />
+          </div>
+          <Explain topic="map" className="px-1" />
         </div>
       </div>
 
@@ -86,18 +91,26 @@ function MainContent() {
           <>
             {/* Header controls strip */}
             <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-800/80 shrink-0">
-              <ChartModeToggle />
+              <div data-tour="mode">
+                <ChartModeToggle />
+              </div>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>{coverageLabel(state.calendarData)}</span>
               </div>
             </div>
 
+            <Explain topic="mode" className="-mt-3" />
+
             {/* Quality and warnings ribbon */}
-            <QualityPanel />
+            <div data-tour="flags" className="flex flex-col gap-2">
+              <QualityPanel />
+              <Explain topic="flags" />
+            </div>
 
             {/* Heatmap Section */}
-            <div className="w-full shrink-0">
+            <div data-tour="calendar" className="w-full shrink-0 flex flex-col gap-2">
+              <Explain topic="calendar" />
               <FireCalendar
                 ref={chartRef}
                 response={state.calendarData}
@@ -109,8 +122,9 @@ function MainContent() {
             </div>
 
             {/* Top Historical Anomalies */}
-            <div className="shrink-0">
+            <div data-tour="top" className="shrink-0 flex flex-col gap-2">
               <TopAnomalies response={state.calendarData} />
+              <Explain topic="top" />
             </div>
           </>
         )}
@@ -147,7 +161,12 @@ function Sidebar() {
       aria-label="Controls sidebar"
     >
       <ControlsPanel />
-      <DownloadButton />
+      {state.status === 'success' && (
+        <div data-tour="download" className="flex flex-col gap-2">
+          <DownloadButton />
+          <Explain topic="download" />
+        </div>
+      )}
       <ExplainerPanel />
     </aside>
   );
@@ -156,10 +175,15 @@ function Sidebar() {
 // ---- App shell ----
 
 function AppShell() {
+  const { state } = useAppState();
+  // The tour is offered once the first calendar has loaded (or failed), so its steps are on screen.
+  const ready = state.status === 'success' || state.status === 'error';
   return (
+    <ExplainProvider>
+    <TourProvider ready={ready}>
     <div className="flex flex-col min-h-screen lg:h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
       {/* Header */}
-      <header className="px-6 py-3.5 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md flex items-center justify-between shrink-0 z-10 shadow-lg">
+      <header className="px-6 py-3.5 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md flex flex-wrap items-center justify-between gap-x-4 gap-y-2 shrink-0 z-10 shadow-lg">
         <div className="flex items-center gap-3.5">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-red-600 via-rose-600 to-amber-500 flex items-center justify-center text-lg shadow-lg shadow-red-950/60">
             🔥
@@ -169,7 +193,7 @@ function AppShell() {
               <span className="font-extrabold text-lg tracking-tight text-white">
                 EmberTrace
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-red-500/10 text-red-400 border border-red-500/20">
+              <span className="whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-red-500/10 text-red-400 border border-red-500/20">
                 NASA Space Apps 2026
               </span>
             </div>
@@ -179,7 +203,12 @@ function AppShell() {
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <TourButton />
+          <ExplainAllSwitch />
+        </div>
+
+        <div className="hidden lg:flex items-center gap-3">
           <a href="#" className="text-xs text-slate-300 hover:text-white underline underline-offset-4 decoration-slate-600">
             How it works
           </a>
@@ -199,6 +228,8 @@ function AppShell() {
         <MainContent />
       </div>
     </div>
+    </TourProvider>
+    </ExplainProvider>
   );
 }
 

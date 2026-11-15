@@ -52,6 +52,21 @@ def test_wrong_conversion_fails_with_the_right_step():
     assert r["result"] == "FAIL" and r["step"] == pytest.approx(0.8)   # VIIRS / (1.25 x VIIRS)
 
 
+def test_zero_floor_is_caught():
+    # Prove the splice check flags a series where a positive intercept turns 0 detections into a positive floor.
+    def _legacy_unpinned_apply(values, cal):
+        v = pd.Series(values, dtype=float) if not isinstance(values, pd.Series) else values
+        return np.expm1(cal["intercept"] + cal["slope"] * np.log1p(v)).clip(lower=0) * cal["bias_factor"]
+
+    floor = {"aqua_to_viirs": {"slope": 1.0, "intercept": 0.5, "bias_factor": 1.0},
+             "terra_to_aqua": EXACT["terra_to_aqua"]}
+    cm = _cell_month(MONTHS)
+    cm.loc[cm["cell_lat"] == 21.375, ["aqua_count_norm", "viirs_count_norm"]] = 0.0   # a quiet cell
+    r = sc.check_source_handover(cm, floor, "2012-01", sc.excluded_months(META), 12, 0.05,
+                                 apply_fn=_legacy_unpinned_apply)
+    assert r["result"] == "FAIL"
+
+
 def test_zero_floor_is_eliminated():
     # Core fix: apply_log_line(0) = 0 even with a positive intercept cal.
     # The old code returned (e^intercept - 1) * bias > 0 for zero.
@@ -81,3 +96,14 @@ def test_truth_check():
     assert sc.check_truth(cm, truth, "2002-07", set(), 12, 0.05)["result"] == "PASS"
     cm.loc[cm["_m"] < pd.Period("2002-07", "M"), "harmonized_count"] *= 1.5     # Terra chain too high
     assert sc.check_truth(cm, truth, "2002-07", set(), 12, 0.05)["result"] == "FAIL"
+
+
+def test_deseasonalized_placebo_ratio():
+    from placebo_lib import placebo_ratios, window_ratio  # noqa: E402
+    cm = _cell_month(MONTHS)
+    tot = cm.groupby("_m")["harmonized_count"].sum(min_count=1)
+    # Periodic seasonal series has exact 1.000 12m-after / 12m-before ratio everywhere
+    assert window_ratio(tot, pd.Period("2012-01", "M"), 12) == pytest.approx(1.0)
+    pl = placebo_ratios(tot, {pd.Period("2002-07", "M"), pd.Period("2012-01", "M")}, 12)
+    assert len(pl) > 100 and pl.mean() == pytest.approx(1.0)
+

@@ -58,6 +58,9 @@ OUTAGE_TABLE = REPO_ROOT / CONFIG["outages"]["firms_table"]
 OUTAGE_MIN_NEIGHBOUR_MEDIAN = CONFIG["outages"]["min_neighbour_median"]
 OUTAGE_WINDOW_DAYS = CONFIG["outages"]["window_days"]
 NRT_MASK = CONFIG["nrt_static_mask"]   # cell_deg, min_hits, dilate
+POOLED_MONTHS = tuple(CONFIG["calibration"]["pooled_months"])
+if not all(isinstance(m, int) and 1 <= m <= 12 for m in POOLED_MONTHS) or len(set(POOLED_MONTHS)) != len(POOLED_MONTHS):
+    raise ValueError(f"{CONFIG_PATH}: calibration.pooled_months must be distinct months 1-12, got {POOLED_MONTHS}")
 
 # FIRMS `satellite` codes -> platform names. A lookup, not a tunable, so it stays in code.
 SAT_MAP = {"T": "Terra", "TERRA": "Terra", "A": "Aqua", "AQUA": "Aqua",

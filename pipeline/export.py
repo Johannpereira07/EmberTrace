@@ -22,7 +22,7 @@ import pandas as pd
 COLUMNS = ["month", "cell_lat", "cell_lon", "harmonized_count", "source",
            "terra_count", "aqua_count", "viirs_count"]
 SOURCES = {"VIIRS", "AQUA_calibrated", "TERRA_chained"}
-DEFAULT_VERSION = "0.1-calibration-pending"   # stages 5-7 known issue (AGENTS.md); change after the fix
+DEFAULT_VERSION = "0.3-monthly-ratio"   # calibration method adopted 2026-11-15 (AGENTS.md method step 5)
 
 
 def build(run, pipeline_version):

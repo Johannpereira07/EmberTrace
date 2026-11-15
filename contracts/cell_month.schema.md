@@ -1,7 +1,7 @@
 # H2: `cell_month` (pipeline → API)
 
 **Written by:** `pipeline/export.py` (CAL-4) · **Read by:** Person 3 (`api/dataset.py`)
-**Status:** draft by Person 1 (CAL-4 taken over on 14 Nov). **Person 2 to confirm (CAL-1).** It matches what the API's loader already expects.
+**Status:** **Confirmed (CAL-1 / CAL-4, 15 Nov 2026).** Matches `api/dataset.py` and `contracts/meta.schema.json`.
 **File:** `data/cell_month.parquet`, made by `make pipeline && make export`. It goes with `data/meta.json` (`contracts/meta.schema.json`) and `data/calibration.json`.
 
 Changes follow the handoff rule in docs/03 §1: adding an optional column is fine with notice; renaming or removing one needs the whole team.
@@ -23,7 +23,7 @@ One row per **(month, grid cell)**: a **full grid**, every cell × every month f
 ## Rules for readers
 
 - **Decide unavailable vs zero from `harmonized_count` (or `source`), never from a raw count.** Raw counts are 0 even when no satellite was flying.
-- The values change whenever stages 5–7 change. `meta.pipeline_version` labels them: `0.1-calibration-pending` means the zero-to-positive calibration issue (AGENTS.md, Known issues) is **not yet fixed**, so don't present these values as results.
+- The values change whenever stages 5–7 change. `meta.pipeline_version` labels them: `0.2-ratio-of-totals` is the production Option C ratio-of-totals calibration (zero detections convert to `0.0`); `0.1-calibration-pending` was the earlier log-line draft.
 
 ## Checks
 

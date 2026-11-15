@@ -11,10 +11,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import sys
+
 import pandas as pd
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "pipeline"))
+from model.calibrate import apply_ratio  # noqa: E402  (the pipeline's own conversion, not a copy)
 # Optional worldwide context layer: FIRMS global 7-day VIIRS file, downloaded by hand into data/raw/global_7d/
 # (https://firms.modaps.eosdis.nasa.gov/data/active_fire/noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_7d.csv).
 WORLD_GLOB = "data/raw/global_7d/*_Global_7d.csv"
@@ -48,18 +52,11 @@ def main() -> None:
     monthly["naive_raw"] = [row[RAW_COLUMN[row["source"]]] for _, row in monthly.iterrows()]
     monthly["year"] = monthly.index.str[:4].astype(int)
 
-    # Overlap-ratio conversion: total VIIRS / total Aqua (and Aqua / Terra) over the fit windows,
-    # from the pipeline's calibration.json. It keeps 0 at 0, so it shows the record without the
-    # zero-to-positive issue of the log-line fit (AGENTS.md, Known issues). VIIRS months are unchanged.
-    a2v = calibration["aqua_to_viirs"]["ratio_y_to_x"]
-    t2a = calibration["terra_to_aqua"]["ratio_y_to_x"]
-    factor = {"VIIRS": None, "AQUA_calibrated": a2v, "TERRA_chained": t2a * a2v}
-    monthly["ratio_converted"] = [
-        row["harmonized"] if factor[row["source"]] is None else row[RAW_COLUMN[row["source"]]] * factor[row["source"]]
-        for _, row in monthly.iterrows()
-    ]
-    # Check: Aqua converted the same way, in the months VIIRS also flew.
-    monthly["aqua_converted"] = monthly["aqua"] * a2v
+    # Check: Aqua converted with the pipeline's own Aqua -> VIIRS calibration (per calendar month for
+    # monthly_ratio), in the months VIIRS also flew. A factor is the same for every cell in a month,
+    # so converting the monthly total equals summing the converted cells.
+    a2v_cal, t2a_cal = calibration["aqua_to_viirs"], calibration["terra_to_aqua"]
+    monthly["aqua_converted"] = apply_ratio(monthly["aqua"], a2v_cal, monthly.index.to_series())
 
     years = []
     for year, g in monthly.groupby("year"):
@@ -70,7 +67,6 @@ def main() -> None:
                 "naive_raw": int(g["naive_raw"].sum()),
                 "viirs_raw": int(g["viirs"].sum()),
                 "harmonized": round(float(g["harmonized"].sum())),
-                "ratio_converted": round(float(g["ratio_converted"].sum())),
                 "aqua_converted": round(float(g["aqua_converted"].sum())) if (g["source"] == "VIIRS").all() else None,
                 "sources": sorted(g["source"].unique().tolist()),
             }
@@ -92,10 +88,11 @@ def main() -> None:
         "coverage": meta["coverage"],
         "cell_size_deg": meta["cell_size_deg"],
         "conversion": {
-            "aqua_to_viirs": a2v,
-            "terra_to_aqua": t2a,
-            "aqua_to_viirs_window": calibration["aqua_to_viirs"]["window"],
-            "terra_to_aqua_window": calibration["terra_to_aqua"]["window"],
+            "method": a2v_cal["method"],
+            "aqua_to_viirs_range": factor_range(a2v_cal),
+            "terra_to_aqua_range": factor_range(t2a_cal),
+            "aqua_to_viirs_window": a2v_cal["window"],
+            "terra_to_aqua_window": t2a_cal["window"],
         },
         "satellites": {name: {"series": s["series"], "start": s["start"]} for name, s in config["satellites"].items()},
         "years": years,
@@ -107,6 +104,12 @@ def main() -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, separators=(",", ":")))
     print(f"wrote {path.relative_to(ROOT)}: {len(years)} years, {len(cells)} cells, {path.stat().st_size / 1024:.0f} KB")
+
+
+def factor_range(cal: dict) -> list[float]:
+    """Smallest and largest conversion factor (one value for a single-factor calibration)."""
+    factors = [float(f) for f in (cal.get("monthly_factors") or {}).values()] or [float(cal["factor"])]
+    return [round(min(factors), 2), round(max(factors), 2)]
 
 
 def build_world_layer(india_cells: list, india_cell_deg: float) -> dict | None:
